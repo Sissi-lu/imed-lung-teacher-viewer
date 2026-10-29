@@ -1,0 +1,4 @@
+data/
+deploy.tar
+__pycache__/
+*.pyc
