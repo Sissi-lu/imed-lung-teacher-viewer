@@ -1,0 +1,18 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+let imageRect={left:100,top:100,width:400,height:300};
+const viewport={insertAdjacentHTML(){},getBoundingClientRect:()=>({left:100,top:100}),clientWidth:400,clientHeight:300};
+const c=vm.createContext({ct:{},dims:[512,512,20],currentVoxelSpacing:[.7,.8,1.25],canvas:{getBoundingClientRect:()=>imageRect},$ :s=>s==='#viewport'?viewport:{insertAdjacentHTML(){}},console});
+const src=fs.readFileSync(path.join(__dirname,'../measurement.js'),'utf8');
+vm.runInContext(src.slice(0,src.indexOf('const baseRender')),c);
+const run=s=>vm.runInContext(s,c);
+assert.equal(run('measurementLength({x:0,y:0},{x:100,y:0},measurementSpacing())'),70);
+assert.equal(run('measurementLength({x:0,y:0},{x:0,y:100},measurementSpacing())'),80);
+assert.equal(run('measurementLength({x:0,y:0},{x:3,y:4},[1,1])'),5);
+assert.equal(run('measurementPoint({clientX:150,clientY:100}).x'),0,'exclude object-fit letterboxing');
+assert.equal(run('measurementPoint({clientX:120,clientY:100})'),null,'do not measure outside the rendered image');
+const before=run('measurementPoint({clientX:225,clientY:175})');
+imageRect={left:-100,top:-50,width:800,height:600};
+const after=run('measurementPoint({clientX:150,clientY:100})');
+assert.equal(after.x,before.x);assert.equal(after.y,before.y,'zoom and pan must preserve voxel coordinates');
+c.currentVoxelSpacing=[0,.8,1];assert.equal(run('measurementSpacing()'),null,'invalid spacing cannot yield mm measurements');
+console.log('PASS: anisotropic mm distances, letterboxing, zoom/pan coordinates and invalid-spacing guard');
