@@ -98,6 +98,14 @@ class Handler(SimpleHTTPRequestHandler):
  def do_GET(self):
   path=self.path.split('?',1)[0]
   try:
+   learning=re.fullmatch(r'/api/learning/imaging-basics-v3/(questions\.json|(?:images|answers)/[NLQ]\d{2}\.png)',path)
+   if learning:
+    bank_root=(DATA/'imaging-basics-v3').resolve()
+    resource=(bank_root/learning.group(1)).resolve()
+    if not resource.is_relative_to(bank_root) or not resource.is_file():
+     return self.send_json({'error':'学习题库资源尚未配置，请检查数据根目录下的 imaging-basics-v3。'},404)
+    mime='application/json; charset=utf-8' if resource.suffix=='.json' else 'image/png'
+    return self.send_bytes(resource.read_bytes(),mime)
    if path=='/api/cases':
     cases=[]
     for p in (DATA/'Pulm').iterdir():
@@ -112,7 +120,7 @@ class Handler(SimpleHTTPRequestHandler):
     return self.send_bytes(result[kind],'application/octet-stream')
    if path.startswith('/api/'):return self.send_error(404)
    # Serve only UI resources. No arbitrary directory listings or dataset paths.
-   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png'}
+   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png','/learning.js','/learning-bank.js','/learning.css'}
    if path not in allowed:return self.send_error(404)
    super().do_GET()
   except (FileNotFoundError,ValueError,KeyError) as ex:self.send_json({'error':str(ex)},400)
