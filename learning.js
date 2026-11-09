@@ -15,9 +15,9 @@
   const tools = window.learningBankTools;
   let imageRoot = 'data/imaging-basics-v3/';
   const topics = [
-    { id: 'normal', title: '正常结构辨识', subtitle: '肺血管、支气管、肺实质与心脏', previewId: 'N13', color: 'mint', icon: 'book' },
-    { id: 'lesion', title: '结节与含气空腔', subtitle: '实性、磨玻璃、部分实性与含气空腔', previewId: 'L14', color: 'peach', icon: 'nodule' },
-    { id: 'quality', title: '图像质量与显示', subtitle: '肺内噪声、重影伪影与显示窗', previewId: 'Q14', color: 'blue', icon: 'image' },
+    { id: 'normal', title: '肺 CT 内常见结构', subtitle: '肺血管、支气管、肺实质与心脏', previewId: 'N13', color: 'mint', icon: 'book' },
+    { id: 'lesion', title: '病灶识别', subtitle: '实性、磨玻璃、部分实性与含气空腔', previewId: 'L14', color: 'peach', icon: 'nodule' },
+    { id: 'quality', title: '图像质量', subtitle: '肺内噪声、重影伪影与显示窗', previewId: 'Q14', color: 'blue', icon: 'image' },
   ];
   const html = value => String(value ?? '').replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
