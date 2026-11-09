@@ -16,6 +16,7 @@ function updateLocalization(){
  $('#localizationProgress').textContent=!ct?'先载入病例，再来找结节吧':!required?'定位不适用 · 当前影像无有效分割标签':done?`定位完成 · ${record.outcome==='hint'?'已使用提示':`第 ${record.attempts} 次尝试命中`}`:`${localizationActive?'试着点一下CT中的结节吧！':'点击第02步，开始找结节吧'} · 已尝试 ${record.attempts} 次`;
  $('#localizationHint').hidden=$('#localizationBubble').hidden=!required||done||record.attempts<10;
  $('#overlay').disabled=!required||!done;$('#overlay').checked=required&&done&&segmented;
+ $('#locate').disabled=!required||!done;
  $('#segment').disabled=$('#analyze').disabled=!required||done;
  $('#analyze').textContent=done&&required?'定位已完成 ✓':localizationActive?'请点击CT中的结节 →':'开始定位 →';
  $('#segment').classList.toggle('done',required&&done);
@@ -24,8 +25,8 @@ function updateLocalization(){
 function startLocalization(){
  if(busy||!ct||!localizationRequired()||localizationFinished())return;
  if(measureMode)$('#measureToggle').click();
- localizationActive=true;localizationGesture=null;$('#slice').value=targetDisplaySlice();zoom=1;panX=panY=0;
- updateLocalization();render();status('试着点击CT中的结节，找到后就能开始写报告啦！');
+ localizationActive=true;localizationGesture=null;$('#slice').value=0;zoom=1;panX=panY=0;
+ updateLocalization();render();status('从第1帧开始，滚动切片寻找结节，再试着点击它吧！');
  document.dispatchEvent(new Event('segmentation-started'));
 }
 function completeLocalization(outcome){
@@ -49,7 +50,6 @@ for(const event of ['pointercancel','wheel'])localizationView.addEventListener(e
 document.addEventListener('case-loading',()=>{localizationActive=false;localizationGesture=null;$('#localizationHint').hidden=$('#localizationBubble').hidden=true});
 document.addEventListener('case-configured',()=>{
  localizationActive=false;localizationGesture=null;segmented=localizationRequired()&&localizationFinished();
- if(segmented)$('#slice').value=targetDisplaySlice();
  updateLocalization();saveDraft();
  if(segmented||!localizationRequired()){guideStage='ready';focusGuideStep(2,true)}
 });
