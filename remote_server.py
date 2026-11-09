@@ -112,7 +112,8 @@ class Handler(SimpleHTTPRequestHandler):
     return self.send_bytes(result[kind],'application/octet-stream')
    if path.startswith('/api/'):return self.send_error(404)
    # Serve only UI resources. No arbitrary directory listings or dataset paths.
-   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png'}
+   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png',
+            '/learning.js','/learning-bank.js','/learning.css'}
    if path not in allowed:return self.send_error(404)
    super().do_GET()
   except (FileNotFoundError,ValueError,KeyError) as ex:self.send_json({'error':str(ex)},400)
