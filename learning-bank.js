@@ -45,6 +45,12 @@ const learningBankTools = (() => {
     return result;
   }
 
+  function createDisplayNumbers(questions) {
+    return Object.fromEntries(questions.map((question, index) => [
+      question.id, String(index + 1).padStart(2, '0'),
+    ]));
+  }
+
   function hydrate(bank, stored) {
     const saved = { answers: {}, viewed: [], optionOrder: {} };
     for (const question of bank.questions) {
@@ -69,7 +75,7 @@ const learningBankTools = (() => {
     return { total: questions.length, answered: submitted.length, correct, wrong };
   }
 
-  return { validate, hydrate, summarize };
+  return { validate, hydrate, summarize, createDisplayNumbers };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = learningBankTools;

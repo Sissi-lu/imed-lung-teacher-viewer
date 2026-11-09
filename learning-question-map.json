@@ -1,0 +1,90 @@
+{
+  "bankVersion": "local-v3-own-data.1",
+  "numbering": "global_bank_order",
+  "questions": [
+    {
+      "displayNumber": "01",
+      "sourceId": "N01",
+      "image": "images/N01.png",
+      "answerImage": "answers/N01.png"
+    },
+    {
+      "displayNumber": "02",
+      "sourceId": "N02",
+      "image": "images/N02.png",
+      "answerImage": "answers/N02.png"
+    },
+    {
+      "displayNumber": "03",
+      "sourceId": "N09",
+      "image": "images/N09.png",
+      "answerImage": "answers/N09.png"
+    },
+    {
+      "displayNumber": "04",
+      "sourceId": "N11",
+      "image": "images/N11.png",
+      "answerImage": "answers/N11.png"
+    },
+    {
+      "displayNumber": "05",
+      "sourceId": "N13",
+      "image": "images/N13.png",
+      "answerImage": "answers/N13.png"
+    },
+    {
+      "displayNumber": "06",
+      "sourceId": "L01",
+      "image": "images/L01.png",
+      "answerImage": "answers/L01.png"
+    },
+    {
+      "displayNumber": "07",
+      "sourceId": "L08",
+      "image": "images/L08.png",
+      "answerImage": "answers/L08.png"
+    },
+    {
+      "displayNumber": "08",
+      "sourceId": "L13",
+      "image": "images/L13.png",
+      "answerImage": "answers/L13.png"
+    },
+    {
+      "displayNumber": "09",
+      "sourceId": "L14",
+      "image": "images/L14.png",
+      "answerImage": "answers/L14.png"
+    },
+    {
+      "displayNumber": "10",
+      "sourceId": "L15",
+      "image": "images/L15.png",
+      "answerImage": "answers/L15.png"
+    },
+    {
+      "displayNumber": "11",
+      "sourceId": "Q13",
+      "image": "images/Q13.png",
+      "answerImage": "answers/Q13.png"
+    },
+    {
+      "displayNumber": "12",
+      "sourceId": "Q14",
+      "image": "images/Q14.png",
+      "answerImage": "answers/Q14.png"
+    },
+    {
+      "displayNumber": "13",
+      "sourceId": "Q06",
+      "image": "images/Q06.png",
+      "answerImage": "answers/Q06.png"
+    },
+    {
+      "displayNumber": "14",
+      "sourceId": "Q04",
+      "image": "images/Q04.png",
+      "answerImage": "answers/Q04.png"
+    }
+  ]
+}

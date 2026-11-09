@@ -23,6 +23,7 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[character]));
   let bank, loading, loadError = '', storageKey;
+  let displayNumbers = {};
   let saved = { answers: {}, viewed: [], optionOrder: {} };
   let storageAvailable = true;
   let page = 'overview', topicId = 'normal', queue = [], position = 0;
@@ -76,6 +77,7 @@
         let stored;
         try { stored = JSON.parse(localStorage.getItem(storageKey)); } catch { /* Use a fresh attempt. */ }
         saved = tools.hydrate(nextBank, stored);
+        displayNumbers = tools.createDisplayNumbers(nextBank.questions);
         bank = nextBank;
         queue = [...bank.questions];
         persist();
@@ -135,7 +137,7 @@
       return `<figure class="lb-source-panel">
         <figcaption>${html(labels[index])}</figcaption>
         <div class="lb-panel-crop" style="aspect-ratio:${panel.aspect}">
-          <img src="${html(path)}" alt="${html(question.id)} ${html(labels[index])}${answer ? '答案图' : '题图'}" style="${imageStyle}" decoding="async">
+          <img src="${html(path)}" alt="${displayNumbers[question.id]} ${html(labels[index])}${answer ? '答案图' : '题图'}" style="${imageStyle}" decoding="async">
           <span class="lb-image-error" hidden>图像载入失败，请刷新重试。</span>
         </div>
       </figure>`;
@@ -193,8 +195,8 @@
       <div class="lb-section-title"><div><h1 tabindex="-1">${topic.title}</h1><p>${topic.subtitle}</p></div></div>
       <div class="lb-detail-grid">
         <div class="lb-image-panel">
-          <label class="lb-example-picker">学习示例<select id="learningExamplePicker" aria-label="选择学习示例">${questions.map((question, index) => `<option value="${index}" ${question.id === example.id ? 'selected' : ''}>${html(question.id)} · ${html(question.objective)}</option>`).join('')}</select></label>
-          <div class="lb-image-header"><span>示例讲解 · ${example.id}</span><button class="lb-text-button" data-action="zoom">⤢ 放大查看</button></div>
+          <label class="lb-example-picker">学习示例<select id="learningExamplePicker" aria-label="选择学习示例">${questions.map((question, index) => `<option value="${index}" ${question.id === example.id ? 'selected' : ''}>${displayNumbers[question.id]} · ${html(question.objective)}</option>`).join('')}</select></label>
+          <div class="lb-image-header"><span>示例讲解 · ${displayNumbers[example.id]}</span><button class="lb-text-button" data-action="zoom">⤢ 放大查看</button></div>
           ${studyImage(example, true)}
           <div class="lb-image-footer"><span>${imageNote(example, true)}</span></div>${imageCredit(example)}
         </div>
@@ -219,7 +221,7 @@
       <div class="lb-quiz-progress"><span>第 <b>${position + 1}</b> / ${queue.length} 题</span><div role="progressbar" aria-label="练习进度" aria-valuemin="0" aria-valuemax="${queue.length}" aria-valuenow="${progress.answered}"><i style="width:${progress.answered / queue.length * 100}%"></i></div><span>${progress.answered} 题已提交</span></div>
       <div class="lb-quiz-grid">
         <div class="lb-image-panel">
-          <div class="lb-image-header"><span>${question.id} · ${question.imagePlaceholder ? '占位图' : showAnswer ? '答案图' : '题图'}</span><button class="lb-text-button" data-action="zoom">⤢ 放大查看</button></div>
+          <div class="lb-image-header"><span>${displayNumbers[question.id]} · ${question.imagePlaceholder ? '占位图' : showAnswer ? '答案图' : '题图'}</span><button class="lb-text-button" data-action="zoom">⤢ 放大查看</button></div>
           ${answer ? `<div class="lb-image-tabs"><button data-action="question-image" aria-pressed="${!showAnswer}">查看题图</button><button data-action="answer-image" aria-pressed="${showAnswer}">查看答案图</button></div>` : ''}
           ${studyImage(question, Boolean(answer) && showAnswer)}
           <div class="lb-image-footer"><span>${imageNote(question, showAnswer)}</span>${question.imagePlaceholder ? '' : '<span>图像左侧为患者右侧</span>'}</div>${imageCredit(question)}
@@ -264,7 +266,7 @@
     <div class="lb-review-grid">${queue.map((question, index) => {
       const answer = saved.answers[question.id];
       const status = question.imagePlaceholder ? '图片待补充' : answer ? answer === question.answer ? '回答正确' : '待回顾' : '尚未作答';
-      return `<button class="lb-review-card" data-action="review-question" data-index="${index}"><span class="lb-review-number">${question.id}</span><div><strong>${html(question.objective)}</strong><small>${status}</small></div><span>↗</span></button>`;
+      return `<button class="lb-review-card" data-action="review-question" data-index="${index}"><span class="lb-review-number">${displayNumbers[question.id]}</span><div><strong>${html(question.objective)}</strong><small>${status}</small></div><span>↗</span></button>`;
     }).join('')}</div>`;
   }
 
@@ -290,7 +292,7 @@
         <div class="lb-footer"><span>◈ LUNG LAB <span>/</span> 影像基础学习</span></div>
       </div>
     </div>
-    ${current ? `<dialog class="lb-zoom-dialog" aria-label="教学图像预览"><div class="lb-image-header"><strong>${current.id} · ${current.imagePlaceholder ? '占位图' : page === 'detail' || showAnswer ? '答案图' : '题图'}</strong><button class="lb-text-button" data-action="close-zoom" autofocus>关闭 ✕</button></div>${studyImage(current, page === 'detail' || showAnswer)}</dialog>` : ''}`;
+    ${current ? `<dialog class="lb-zoom-dialog" aria-label="教学图像预览"><div class="lb-image-header"><strong>${displayNumbers[current.id]} · ${current.imagePlaceholder ? '占位图' : page === 'detail' || showAnswer ? '答案图' : '题图'}</strong><button class="lb-text-button" data-action="close-zoom" autofocus>关闭 ✕</button></div>${studyImage(current, page === 'detail' || showAnswer)}</dialog>` : ''}`;
     const picker = root.querySelector('#learningSkinPicker');
     if (picker) picker.value = document.body.dataset.skin;
     window.scrollTo(0, 0);

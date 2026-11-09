@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { validate, hydrate, summarize } = require('../learning-bank.js');
+const { validate, hydrate, summarize, createDisplayNumbers } = require('../learning-bank.js');
 
 const question = {
   id: 'N01', group: 'normal', prompt: '识别目标', explanation: '示例解析',
@@ -46,4 +46,14 @@ const repaired = hydrate(bank, {
 assert.deepEqual(repaired.answers, {});
 assert.deepEqual(new Set(repaired.optionOrder.N01), new Set(['A', 'B', 'C', 'D']));
 assert.deepEqual(repaired.viewed, []);
+
+// Display numbers belong to the full bank, including in filtered review queues.
+const numberedQuestions = ['N01', 'N02', 'N09', 'L14', 'Q13'].map(id => ({ ...question, id }));
+const numbered = createDisplayNumbers(numberedQuestions);
+assert.deepEqual(numbered, { N01: '01', N02: '02', N09: '03', L14: '04', Q13: '05' });
+assert.deepEqual([numberedQuestions[2], numberedQuestions[4]].map(q => numbered[q.id]), ['03', '05']);
+assert.equal(numberedQuestions[2].id, 'N09');
+const mapping = require('../learning-question-map.json');
+const mappingNumbers = createDisplayNumbers(mapping.questions.map(q => ({ id: q.sourceId })));
+assert.deepEqual(mappingNumbers, Object.fromEntries(mapping.questions.map(q => [q.sourceId, q.displayNumber])));
 console.log('PASS: stable answer IDs, progress repair, grading and local image geometry validation');
