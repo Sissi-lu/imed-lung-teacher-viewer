@@ -13,8 +13,7 @@
   };
   const icon = (name, cls = '') => `<svg class="lb-icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.image}</svg>`;
   const tools = window.learningBankTools;
-  const bankUrl = 'data/imaging-basics-v3/questions.json';
-  const imageRoot = 'data/imaging-basics-v3/';
+  let imageRoot = 'data/imaging-basics-v3/';
   const topics = [
     { id: 'normal', title: '正常结构辨识', subtitle: '认识肺内结构与心脏', color: 'mint', icon: 'book' },
     { id: 'lesion', title: '病灶与正常结构区分', subtitle: '认识结节密度与含气空腔', color: 'peach', icon: 'nodule' },
@@ -63,8 +62,11 @@
     loadError = '';
     loading = (async () => {
       try {
-        const response = await fetch(bankUrl, { cache: 'no-store' });
-        if (!response.ok) throw new Error('本地题库暂时无法读取，请检查题库文件后重试。');
+        await window.resultProvider.ready;
+        imageRoot = window.resultProvider.mode === 'server'
+          ? '/api/learning/imaging-basics-v3/' : 'data/imaging-basics-v3/';
+        const response = await fetch(imageRoot + 'questions.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('题库暂时无法读取，请检查题库数据与服务配置后重试。');
         const nextBank = tools.validate(await response.json());
         if (topics.some(topic => !nextBank.questions.some(question => question.group === topic.id))) {
           throw new Error('题库缺少学习主题，请检查本地题库文件。');

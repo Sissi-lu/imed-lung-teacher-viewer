@@ -98,6 +98,14 @@ class Handler(SimpleHTTPRequestHandler):
  def do_GET(self):
   path=self.path.split('?',1)[0]
   try:
+   learning=re.fullmatch(r'/api/learning/imaging-basics-v3/(questions\.json|(?:images|answers)/[NLQ]\d{2}\.png)',path)
+   if learning:
+    bank_root=(DATA/'imaging-basics-v3').resolve()
+    resource=(bank_root/learning.group(1)).resolve()
+    if not resource.is_relative_to(bank_root) or not resource.is_file():
+     return self.send_json({'error':'学习题库资源尚未配置，请检查数据根目录下的 imaging-basics-v3。'},404)
+    mime='application/json; charset=utf-8' if resource.suffix=='.json' else 'image/png'
+    return self.send_bytes(resource.read_bytes(),mime)
    if path=='/api/cases':
     cases=[]
     for p in (DATA/'Pulm').iterdir():
