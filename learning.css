@@ -36,6 +36,28 @@
   background: #03070b;
 }
 
+.lb-example-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.lb-example-picker select {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
 .lb-placeholder-label {
   position: absolute;
   inset: auto 18px 18px;

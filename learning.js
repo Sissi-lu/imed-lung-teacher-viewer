@@ -15,9 +15,9 @@
   const tools = window.learningBankTools;
   let imageRoot = 'data/imaging-basics-v3/';
   const topics = [
-    { id: 'normal', title: '正常结构辨识', subtitle: '认识肺内结构与心脏', color: 'mint', icon: 'book' },
-    { id: 'lesion', title: '病灶与正常结构区分', subtitle: '认识结节密度与含气空腔', color: 'peach', icon: 'nodule' },
-    { id: 'quality', title: '图像质量与显示', subtitle: '观察肺内噪声、重影与显示窗', color: 'blue', icon: 'image' },
+    { id: 'normal', title: '正常结构辨识', subtitle: '肺血管、支气管、肺实质与心脏', previewId: 'N13', color: 'mint', icon: 'book' },
+    { id: 'lesion', title: '结节与含气空腔', subtitle: '实性、磨玻璃、部分实性与含气空腔', previewId: 'L14', color: 'peach', icon: 'nodule' },
+    { id: 'quality', title: '图像质量与显示', subtitle: '肺内噪声、重影伪影与显示窗', previewId: 'Q14', color: 'blue', icon: 'image' },
   ];
   const html = value => String(value ?? '').replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -26,6 +26,7 @@
   let saved = { answers: {}, viewed: [], optionOrder: {} };
   let storageAvailable = true;
   let page = 'overview', topicId = 'normal', queue = [], position = 0;
+  let exampleIndex = 0;
   let selected = null, showAnswer = false, previousScroll = 0, companionHidden = true;
   const app = document.querySelector('.app');
   const companion = document.querySelector('#companion');
@@ -177,7 +178,7 @@
       const progress = tools.summarize(questions, saved.answers);
       return `<button class="lb-topic lb-${topic.color}" data-action="topic" data-topic="${topic.id}">
         <div class="lb-topic-top"><span class="lb-topic-symbol">${icon(topic.icon)}</span><span class="lb-topic-number">0${index + 1}</span></div>
-        ${studyImage(questions[0], false, true)}
+        ${studyImage(questions.find(question => question.id === topic.previewId) || questions[0], false, true)}
         <h3>${topic.title}</h3><p>${topic.subtitle}</p>
         <div class="lb-topic-foot"><span>${progress.answered} / ${questions.length} 题已完成</span><span aria-hidden="true">↗</span></div>
       </button>`;
@@ -187,11 +188,12 @@
   function detail() {
     const topic = topics.find(item => item.id === topicId);
     const questions = groupQuestions(topicId);
-    const example = questions[0];
+    const example = questions[exampleIndex] || questions[0];
     return `<button class="lb-text-button" data-action="overview">← 全部学习主题</button>
       <div class="lb-section-title"><div><h1 tabindex="-1">${topic.title}</h1><p>${topic.subtitle}</p></div></div>
       <div class="lb-detail-grid">
         <div class="lb-image-panel">
+          <label class="lb-example-picker">学习示例<select id="learningExamplePicker" aria-label="选择学习示例">${questions.map((question, index) => `<option value="${index}" ${question.id === example.id ? 'selected' : ''}>${html(question.id)} · ${html(question.objective)}</option>`).join('')}</select></label>
           <div class="lb-image-header"><span>示例讲解 · ${example.id}</span><button class="lb-text-button" data-action="zoom">⤢ 放大查看</button></div>
           ${studyImage(example, true)}
           <div class="lb-image-footer"><span>${imageNote(example, true)}</span></div>${imageCredit(example)}
@@ -200,7 +202,6 @@
           <div class="lb-topic-symbol lb-${topic.color}">${icon(topic.icon)}</div>
           <h2>${html(example.objective)}</h2>
           <div class="lb-knowledge-row"><div><h3>观察提示</h3><p>${html(example.explanation)}</p></div></div>
-          <div class="lb-knowledge-row"><div><h3>本组练习</h3><p>${questions.map(question => html(question.objective)).join('、')}。</p></div></div>
           <button class="lb-button" data-action="topic-practice">进入本组练习 · ${questions.length} 题 ${icon('arrow')}</button>
         </div>
       </div>`;
@@ -276,7 +277,7 @@
     } else {
       content = page === 'overview' ? overview() : page === 'detail' ? detail() : page === 'practice' ? practice() : summary();
     }
-    const current = bank && (page === 'practice' ? queue[position] : groupQuestions(topicId)[0]);
+    const current = bank && (page === 'practice' ? queue[position] : groupQuestions(topicId)[exampleIndex] || groupQuestions(topicId)[0]);
     root.innerHTML = `<div class="lb-shell">
       <div class="lb-topbar">
         <button class="lb-back" data-action="work">← <span>返回影像工作台</span></button><span class="lb-topbar-title">${icon('book')} 影像基础学习</span>
@@ -316,6 +317,11 @@
       setSkin(event.target.value);
       return;
     }
+    if (event.target.id === 'learningExamplePicker') {
+      exampleIndex = Number(event.target.value);
+      render();
+      return;
+    }
     if (event.target.name !== 'lb-answer') return;
     selected = event.target.value;
     root.querySelectorAll('.lb-option').forEach(label => label.classList.toggle('is-selected', label.querySelector('input').checked));
@@ -339,6 +345,7 @@
       case 'overview': page = 'overview'; break;
       case 'topic':
         topicId = button.dataset.topic;
+        exampleIndex = 0;
         page = 'detail';
         if (!saved.viewed.includes(topicId)) { saved.viewed.push(topicId); persist(); }
         break;
