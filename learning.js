@@ -145,10 +145,10 @@
     return `<div class="lb-source-image ${compact ? 'lb-source-compact' : ''} ${question.panels.length === 1 ? 'lb-source-single' : ''}">${panels}${question.imagePlaceholder ? '<span class="lb-placeholder-label">占位图片 · 待替换</span>' : ''}</div>`;
   }
 
-  function imageNote(question, answer) {
+  function imageNote(question) {
     if (question.imageNote) return html(question.imageNote);
     const note = question.comparison ? '左右图为同一区域的不同显示窗' : '蓝色箭头用于定位';
-    return note + (answer ? ' · 黄色框为教学区域' : '');
+    return note;
   }
 
   function imageCredit(question) {
@@ -198,7 +198,7 @@
           <label class="lb-example-picker">学习示例<select id="learningExamplePicker" aria-label="选择学习示例">${questions.map((question, index) => `<option value="${index}" ${question.id === example.id ? 'selected' : ''}>${displayNumbers[question.id]} · ${html(question.objective)}</option>`).join('')}</select></label>
           <div class="lb-image-header"><span>示例讲解 · ${displayNumbers[example.id]}</span><button class="lb-text-button" data-action="zoom">⤢ 放大查看</button></div>
           ${studyImage(example, true)}
-          <div class="lb-image-footer"><span>${imageNote(example, true)}</span></div>${imageCredit(example)}
+          <div class="lb-image-footer"><span>${imageNote(example)}</span></div>${imageCredit(example)}
         </div>
         <div class="lb-detail-copy">
           <div class="lb-topic-symbol lb-${topic.color}">${icon(topic.icon)}</div>
@@ -224,7 +224,7 @@
           <div class="lb-image-header"><span>${displayNumbers[question.id]} · ${question.imagePlaceholder ? '占位图' : showAnswer ? '答案图' : '题图'}</span><button class="lb-text-button" data-action="zoom">⤢ 放大查看</button></div>
           ${answer ? `<div class="lb-image-tabs"><button data-action="question-image" aria-pressed="${!showAnswer}">查看题图</button><button data-action="answer-image" aria-pressed="${showAnswer}">查看答案图</button></div>` : ''}
           ${studyImage(question, Boolean(answer) && showAnswer)}
-          <div class="lb-image-footer"><span>${imageNote(question, showAnswer)}</span>${question.imagePlaceholder ? '' : '<span>图像左侧为患者右侧</span>'}</div>${imageCredit(question)}
+          <div class="lb-image-footer"><span>${imageNote(question)}</span></div>${imageCredit(question)}
         </div>
         <div class="lb-question-panel">
           <h2 id="lbQuestionTitle">${html(question.prompt)}</h2>
