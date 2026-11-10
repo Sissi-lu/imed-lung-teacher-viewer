@@ -10,7 +10,7 @@ const context=vm.createContext({example:true,meta:{caseId:'30',sections:[{rows:[
  ['分类输出','□4A ☑4B □4C □5'],
  ['边界及征象','边界：☑清楚 □模糊；分叶：☑无 □有；毛刺：☑无 □有'],
  ['结节数量','□单发 □多发：☑散在']
- ]}]},sessionStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},console});
+ ]}]},localizationRequired:()=>false,sessionStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},console});
 vm.runInContext(source.slice(0,source.indexOf('// Navigation is kept')),context);
 const run=code=>vm.runInContext(code,context);
 assert.equal(run('referenceAnswers().lobe'),'左下叶');
