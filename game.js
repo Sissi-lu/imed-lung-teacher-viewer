@@ -5,8 +5,8 @@ const scene=`<svg class="lab-art" viewBox="0 0 900 680" role="img" aria-label="�
 <g><path d="M654 285L805 364V386L654 307Z" fill="#a1c6c6"/><path d="M654 307V392L668 398V315M790 380V456L804 449V385" fill="#6c96a7"/><path d="M685 266L747 296V343L685 313Z" fill="#102f43" stroke="#87b8ba" stroke-width="4"/><path d="M697 283L734 301M697 294L726 308M697 305L735 322" stroke="#6fe3ce" stroke-width="3"/><path d="M751 333L781 348L764 358L734 343Z" fill="#d3e6dc"/><path d="M765 293V329L789 342V307Z" fill="#e8b77e"/><path d="M778 305Q755 280 768 260Q789 277 778 305Q797 277 809 284Q805 304 778 305" fill="#77ba9b"/></g>
 <path d="M195 422L284 392L324 414L236 448Z" fill="#b1d3d0"/><path d="M195 422V473L236 497V448M236 448L324 414V463L236 497" fill="#6b97a7"/><rect x="225" y="373" width="28" height="42" rx="8" fill="#f4d59c"/><path d="M239 380Q210 355 221 339Q244 346 239 380Q245 344 260 347Q270 369 239 380" fill="#7ad4ac"/>
 <g class="holo"><ellipse cx="586" cy="201" rx="50" ry="13" fill="#75ebdc" opacity=".12"/><path d="M550 199L550 137L622 137V199" fill="#7cf5d7" opacity=".05"/><path d="M580 148Q566 138 561 159Q550 184 580 178ZM591 148Q605 138 611 159Q622 184 592 178Z" fill="#8ffff0" opacity=".65"/><path d="M586 139V165" stroke="#8ffff0" stroke-width="3"/></g></svg>`;
-document.body.insertAdjacentHTML('afterbegin',`<section id="launch" class="launch"><div class="launch-stars"></div><nav class="launch-nav"><a class="launch-brand" href="#">◈ <b>LUNG<span>LAB</span></b></a><span>一场关于影像的探索之旅</span><button id="sound" class="round-button" aria-label="开启音效">♫ 音效关</button></nav><div class="launch-main"><div class="launch-copy"><div class="chapter-tag">✦ 肺部探索计划 · 第一章</div><h1>每一次探索，<br>都有新的<span>发现。</span></h1><p>欢迎来到肺部探索站！<br>和小助手「小肺」一起，打开影像档案，<br>探索 CT 中的细节。</p><div class="launch-actions"><button id="startExplore" class="start-game">开始探索 <span>➜</span></button><button id="startImport" class="secondary-game">＋ 导入新影像</button></div><button id="guideIntro" class="guide-link">ⓘ 第一次来？看看探索指南</button><div class="launch-badges"><span>◉ 真实 CT 影像</span><span>✧ 交互式探索</span><span>⌂ 本地工作空间</span></div></div><div class="lab-scene">${scene}<div class="scene-tag">✦ 影像实验室 <span>LAB 030</span></div><div class="hero-robot">${robotSVG}</div><div class="hero-bubble">嗨！我是小肺。<br>今天我们一起探索吧！<span>✦</span></div><div class="scene-floor-label">IMAGING DISCOVERY STATION</div></div></div><div class="launch-bottom"><span>01 / 影像实验室</span><span>示例病例体验 · 分割与报告模型待接入</span><span>准备好出发了吗？ ✧</span></div></section>`);
-document.body.insertAdjacentHTML('beforeend',`<div id="companion" class="companion" hidden><div class="companion-bubble"><b>小肺 · 你的探索搭档</b><p id="botMessage">今天的影像档案准备好了，我们先打开看看吧！</p><div><button id="nextHint">带我探索 →</button><button id="dismissHint" aria-label="收起提示">收起</button></div></div><button id="botButton" class="bot-button" aria-label="小肺助手">${robotSVG}</button></div><dialog id="guideDialog" class="guide-dialog"><div class="eyebrow">EXPLORER'S HANDBOOK</div><h2>准备好，开启你的第一次探索！</h2><div class="guide-cards"><div><b>01</b><h3>导入影像</h3><p>点击第01步，在服务器病例列表中选择要探索的CT。</p></div><div><b>02</b><h3>找到目标结节</h3><p>点击「结节定位」，在CT中找到结节后再编写报告。</p></div><div><b>03</b><h3>编写报告</h3><p>跟着林医生完成问答，写下影像所见与诊断意见。</p></div><div><b>04</b><h3>提交评价</h3><p>提交报告，到黑板复盘定位与报告得分。</p></div><div><b>05</b><h3>导出作业</h3><p>保存你的观察、报告和本次评价。</p></div></div><p class="hint">当前体验加载已有结果。后续将接入肺部分割与报告生成模型。</p><button id="closeGuide" class="start-game">我准备好了 →</button></dialog>`);
+document.body.insertAdjacentHTML('afterbegin',`<section id="launch" class="launch"><div class="launch-stars"></div><nav class="launch-nav"><a class="launch-brand" href="#">◈ <b>LUNG<span>LAB</span></b></a><span>一场关于影像的探索之旅</span><button id="sound" class="round-button" aria-label="开启音效">♫ 音效关</button></nav><div class="launch-main"><div class="launch-copy"><div class="chapter-tag">✦ 肺部探索计划 · 第一章</div><h1>放射科练级记<br><span>今天也来闯关！</span></h1><p>欢迎来到EI-放射科规培生教学游戏！<br>和小助手「小肺」一起，打开影像档案，<br>探索 CT 中的细节。</p><div class="launch-actions"><button id="startExplore" class="start-game">开始探索 <span>➜</span></button><button id="startImport" class="secondary-game">＋ 导入新影像</button></div><button id="guideIntro" class="guide-link">ⓘ 第一次来？看看探索指南</button><div class="launch-badges"><span>◉ 真实 CT 影像</span><span>✧ 交互式探索</span><span>⌂ 本地工作空间</span></div></div><div class="lab-scene">${scene}<div class="scene-tag">✦ 影像实验室 <span>LAB 030</span></div><div class="hero-robot">${robotSVG}</div><div class="hero-bubble">嗨！我是小肺。<br>今天我们一起探索吧！<span>✦</span></div><div class="scene-floor-label">IMAGING DISCOVERY STATION</div></div></div><div class="launch-bottom"><span>01 / 影像实验室</span><span>示例病例体验 · 分割与报告模型待接入</span><span>准备好出发了吗？ ✧</span></div></section>`);
+document.body.insertAdjacentHTML('beforeend',`<div id="companion" class="companion" hidden><div class="companion-bubble"><b>小肺 · 你的探索搭档</b><p id="botMessage">今天的影像档案准备好了，我们先打开看看吧！</p><div><button id="nextHint">带我探索 →</button><button id="dismissHint" aria-label="收起提示">收起</button></div></div><button id="botButton" class="bot-button" aria-label="小肺助手">${robotSVG}</button></div><dialog id="guideDialog" class="guide-dialog"><div class="eyebrow">EXPLORER'S HANDBOOK</div><h2>准备好，开启你的第一次探索！</h2><div class="guide-cards"><div><b>01</b><h3>选择病例</h3><p>点击第01步，在服务器病例列表中选择要探索的CT。</p></div><div><b>02</b><h3>结节定位</h3><p>点击「结节定位」，在CT中找到结节后再进入报告填写。</p></div><div><b>03</b><h3>报告填写</h3><p>跟着林医生完成问答，写下影像所见与诊断意见。</p></div><div><b>04</b><h3>评估与复盘</h3><p>提交报告，到黑板复盘定位与报告得分。</p></div><div><b>05</b><h3>导出训练结果</h3><p>保存你的观察、报告和本次评价。</p></div></div><p class="hint">当前体验加载已有结果。后续将接入肺部分割与报告生成模型。</p><button id="closeGuide" class="start-game">我准备好了 →</button></dialog>`);
 const launch=document.querySelector('#launch'),companion=document.querySelector('#companion');
 document.querySelector('.app').hidden=true;
 let soundOn=false,guideIndex=0;
@@ -19,10 +19,10 @@ document.querySelector('#guideIntro').onclick=()=>document.querySelector('#guide
 document.querySelector('header').insertAdjacentHTML('beforeend','<button id="backLobby" class="quiet">⌂ 返回探索站</button>');
 document.querySelector('#backLobby').onclick=()=>{launch.hidden=false;document.querySelector('.app').hidden=true;companion.hidden=true;window.scrollTo(0,0);chime()};
 const hints=[
- ['#import','第一步 · 导入影像：点击黄色框中的第01步，从服务器病例列表选择CT。'],
+ ['#import','第一步 · 选择病例：点击黄色框中的第01步，从服务器病例列表选择CT。'],
  ['#segment','第二步 · 结节定位：点击第02步，在CT中试着点一下结节吧！'],
  ['#report','第三步 · 查看报告：点击黄色框中的第03步打开病例档案。'],
- ['#export','第四步 · 导出结果：报告已打开，点击黄色框中的第04步保存报告。']
+ ['#export','第四步 · 导出训练结果：报告已打开，点击黄色框中的第04步保存报告。']
 ];
 let guideStage='ready';
 function focusGuideStep(index,automatic=false,message){
@@ -39,7 +39,7 @@ function focusGuideStep(index,automatic=false,message){
 function resetGuide(){guideStage='ready';focusGuideStep(ct?1:0,true)}
 document.addEventListener('case-reset',resetGuide);
 document.addEventListener('case-loading',()=>{guideStage='loading';focusGuideStep(0,true,'第一步 · 正在加载所选病例，请等待影像加载完成。')});
-document.addEventListener('case-load-failed',()=>{guideStage='ready';focusGuideStep(0,true,'第一步 · 病例加载失败，请点击黄色框中的「导入影像」重新选择。')});
+document.addEventListener('case-load-failed',()=>{guideStage='ready';focusGuideStep(0,true,'第一步 · 病例加载失败，请点击黄色框中的「选择病例」重新选择。')});
 document.querySelector('#nextHint').onclick=()=>{if(guideStage==='done'){document.querySelector('#import').click();return}focusGuideStep(guideIndex);chime()};
 document.querySelector('#dismissHint').onclick=()=>companion.classList.add('collapsed');
 document.querySelector('#botButton').onclick=()=>{companion.classList.toggle('collapsed');chime()};
@@ -48,14 +48,14 @@ document.addEventListener('segmentation-complete',()=>{guideStage='ready';focusG
 document.addEventListener('report-opened',()=>{guideStage='ready';focusGuideStep(3,true);chime()});
 document.addEventListener('report-exported',()=>{guideStage='done';document.querySelectorAll('.quest-focus').forEach(e=>e.classList.remove('quest-focus'));document.querySelector('#botMessage').textContent='五步探索完成！病例报告已经导出，可以继续浏览或选择新的病例。';document.querySelector('#nextHint').disabled=false;document.querySelector('#nextHint').textContent='选择新病例 →'});
 document.querySelector('#startExplore').addEventListener('click',()=>{if(guideStage==='done')return;focusGuideStep(ct?(reportUnlocked?3:segmented?2:1):0,true)});
-document.querySelector('.intro h1').innerHTML='影像探索任务<span class="cyan"> · 030</span>';document.querySelector('.intro p').textContent='拖动、观察、发现。和小肺一起完成今天的影像探索。';
-document.querySelector('.panel-heading span').textContent='探索任务';
+document.querySelector('.intro h1').innerHTML='肺部 CT 阅片训练<span class="cyan"> · 030</span>';document.querySelector('.intro p').textContent='完成病例阅片、结节定位与报告填写，提交后查看评估与复盘。';
+document.querySelector('.panel-heading span').textContent='训练流程';
 // Keep the supplied laboratory emblem unchanged, on a light enamel plaque.
 document.querySelectorAll('.launch-brand,.brand').forEach(el=>{
- el.innerHTML='<img class="lab-emblem" src="assets/lab-emblem.png" alt="cn Med 实验室队徽"><span class="brand-caption">肺部探索站<small>IMAGING DISCOVERY LAB</small></span>';
- el.setAttribute('aria-label','实验室肺部探索站');
+ el.innerHTML='<span class="brand-marks"><img class="lab-emblem" src="assets/lab-emblem.png" alt="cn Med 实验室队徽"><img class="ei-emblem" src="assets/ei-logo.png" alt="EI"></span><span class="brand-caption">EI-放射科规培生教学游戏<small>IMAGING DISCOVERY LAB</small></span>';
+ el.setAttribute('aria-label','EI-放射科规培生教学游戏');
 });
-document.title='肺部探索站 · 实验室';
+document.title='EI-放射科规培生教学游戏';
 const particles=document.createElement('div');particles.className='game-particles';particles.setAttribute('aria-hidden','true');
 for(let i=0;i<23;i++){const dot=document.createElement('i');dot.style.cssText=`--x:${(i*37+11)%100}%;--delay:${-i*.83}s;--duration:${12+i%7}s;--size:${2+i%3}px`;particles.append(dot)}
 launch.prepend(particles);

@@ -77,9 +77,9 @@ function showReview(){const d=getDraft();if(!d.submitted){teachingBoard=false;re
  $('#reviseLesson').onclick=()=>{teachingBoard=false;teachingTab='structured';report();guideStage='ready';focusGuideStep(2,true,'回到第03步修改作业。修改后请重新提交，系统会重新计算分数。')};
 }
 // Navigation is kept in the existing mission guide, with five actual steps.
-$('#export').insertAdjacentHTML('beforebegin','<button class="step" id="evaluate"><b>04</b><span>提交评价<small>黑板复盘课堂</small></span><em>↗</em></button>');
-$('#export b').textContent='05';$('#report span').childNodes[0].textContent='编写报告';$('#report small').textContent='跟着医生完成问答';
-hints.splice(2,2,['#report','第三步 · 编写报告：跟着林医生回答问题，再完成影像所见和诊断意见。'],['#evaluate','第四步 · 提交评价：在诊断意见中提交整份报告，然后到黑板复盘。'],['#export','第五步 · 导出作业：保存你的填写、报告与评价结果。']);
+$('#export').insertAdjacentHTML('beforebegin','<button class="step" id="evaluate"><b>04</b><span>评估与复盘<small>查看得分与复盘</small></span><em>↗</em></button>');
+$('#export b').textContent='05';$('#report span').childNodes[0].textContent='报告填写';$('#report small').textContent='完成结构化问答';
+hints.splice(2,2,['#report','第三步 · 报告填写：跟着林医生回答问题，再完成影像所见和诊断意见。'],['#evaluate','第四步 · 评估与复盘：在诊断意见中提交整份报告，然后到黑板复盘。'],['#export','第五步 · 导出训练结果：保存你的填写、报告与评价结果。']);
 $('#evaluate').onclick=()=>{if(!ct||busy){toast('请先选择病例并等待影像加载完成');return}if(!requireLocalization())return;reportUnlocked=true;const d=getDraft();if(d.submitted){teachingBoard=true;report()}else{teachingBoard=false;teachingTab='diagnosis';report();toast('请在这里完成报告，点击底部「提交报告」进入评价')}guideStage='ready';focusGuideStep(3,true)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(!reportUnlocked)return;teachingTab=b.dataset.tab;teachingBoard=false;report()});
 document.addEventListener('case-reset',()=>{teachingQuestion=0;teachingTab='structured';teachingBoard=false;$('#evaluate').classList.remove('done');report()});
