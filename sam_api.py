@@ -65,7 +65,7 @@ def create_app(runner):
                 if len(sessions) >= 4:
                     del sessions[min(sessions, key=lambda sid: sessions[sid]['time'])]
                 predictor = runner.new_predictor()
-                runner.set_image(predictor, np.asarray(image))
+                runner.set_image(predictor, np.array(image, copy=True))
                 sid = uuid.uuid4().hex
                 sessions[sid] = {'predictor': predictor, 'groups': {}, 'time': time.monotonic(), 'size': image.size}
                 return {'sessionId': sid, 'backend': runner.backend, 'checkpoint': Path(runner.checkpoint).name}
