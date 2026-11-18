@@ -109,7 +109,9 @@ if __name__ == '__main__':
     parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--port', type=int, default=8766)
     args = parser.parse_args()
+    args.sam_source = str(Path(args.sam_source).expanduser().resolve())
+    checkpoint = Path(args.checkpoint).expanduser().resolve() if args.checkpoint else Path(args.sam_source) / 'web_ui/checkpoints/lung_sam2_hiera_l.pt'
     sys.path.insert(0, args.sam_source)
     from web_ui.sam_backend import build_runner
-    runner = build_runner(args.checkpoint or str(Path(args.sam_source) / 'web_ui/checkpoints/lung_sam2_hiera_l.pt'), backend='sam2', device=args.device)
+    runner = build_runner(str(checkpoint), backend='sam2', device=args.device)
     uvicorn.run(create_app(runner), host='127.0.0.1', port=args.port)

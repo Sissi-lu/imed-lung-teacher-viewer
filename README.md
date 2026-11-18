@@ -33,12 +33,19 @@
 主服务环境安装 `requirements.txt`。SAM使用独立conda环境，安装PyTorch 2.5.1、torchvision 0.20.1以及 `requirements-sam.txt`；保留参考SAM项目及其 `external/sam2` 源码。通过 `--sam-source`、`--checkpoint`、`--device` 指定源码、权重和GPU；本功能仅运行推理。
 
 ```bash
-bash scripts/start_practice_services.sh sam     # 独立启动SAM，127.0.0.1:8766
-bash scripts/start_practice_services.sh viewer  # 启动阅片服务，0.0.0.0:8765
+bash /data_new/moyancheng/code/imed-lung-teacher-viewer/scripts/start_practice_services.sh sam     # 独立启动SAM，127.0.0.1:8766
+bash /data_new/moyancheng/code/imed-lung-teacher-viewer/scripts/start_practice_services.sh viewer  # 启动阅片服务，0.0.0.0:8765
 # 亦可使用 all；已有同名screen会保留，重启前先停止对应screen。
 screen -S imed-lung-sam-8766 -X quit
 screen -S imed-lung-viewer-8765 -X quit
 ```
+
+SAM 默认使用以下绝对路径，可从任意工作目录调用上述启动脚本：
+
+- Python：`/data_new/moyancheng/envs/imed-lung-sam-api/bin/python`
+- API 入口：`/data_new/moyancheng/code/imed-lung-teacher-viewer/sam_api.py`
+- SAM 源码：`/data_new/moyancheng/code/agent/SAM/segment-anything`
+- checkpoint：`/data_new/moyancheng/code/agent/SAM/segment-anything/web_ui/checkpoints/lung_sam2_hiera_l.pt`
 
 启动脚本支持 `SAM_PYTHON`、`SAM_SOURCE`、`SAM_CHECKPOINT`、`SAM_DEVICE`、`VIEWER_PYTHON`、`DATA_ROOT`、`PRACTICE_OUTPUT_ROOT` 和 `PRACTICE_LOG_ROOT`。每次启动创建新日志目录；留档默认写入仓库外的 `experiments/imed-lung-teacher-viewer/practice_records`。
 

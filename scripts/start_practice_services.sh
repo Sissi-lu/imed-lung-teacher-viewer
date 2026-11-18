@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/.."
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$project_root"
 service="${1:-all}"
 log_dir="${PRACTICE_LOG_ROOT:-/data_new/moyancheng/experiments/imed-lung-teacher-viewer}/services_$(date +%Y%m%d_%H%M%S)_$$"
 mkdir -p "$log_dir"
@@ -9,7 +10,7 @@ if [[ "$service" == sam || "$service" == all ]]; then
     echo 'SAM screen 已运行。'
   else
     screen -dmS imed-lung-sam-8766 -L -Logfile "$log_dir/sam.log" \
-      "${SAM_PYTHON:-/data_new/moyancheng/envs/imed-lung-sam-api/bin/python}" -u sam_api.py \
+      "${SAM_PYTHON:-/data_new/moyancheng/envs/imed-lung-sam-api/bin/python}" -u "$project_root/sam_api.py" \
       --sam-source "${SAM_SOURCE:-/data_new/moyancheng/code/agent/SAM/segment-anything}" \
       --checkpoint "${SAM_CHECKPOINT:-/data_new/moyancheng/code/agent/SAM/segment-anything/web_ui/checkpoints/lung_sam2_hiera_l.pt}" \
       --device "${SAM_DEVICE:-cuda:0}" --port 8766
