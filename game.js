@@ -21,8 +21,8 @@ document.querySelector('#backLobby').onclick=()=>{launch.hidden=false;document.q
 const hints=[
  ['#import','第一步 · 选择病例：点击黄色框中的第01步，从服务器病例列表选择CT。'],
  ['#segment','第二步 · 结节定位：点击第02步，在CT中试着点一下结节吧！'],
- ['#report','第三步 · 查看报告：点击黄色框中的第03步打开病例档案。'],
- ['#export','第四步 · 导出训练结果：报告已打开，点击黄色框中的第04步保存报告。']
+ ['#report','第三步 · 查看报告：点击黄色框中的第02步打开病例档案。'],
+ ['#export','第四步 · 导出训练结果：报告已打开，点击黄色框中的第03步保存报告。']
 ];
 let guideStage='ready';
 function focusGuideStep(index,automatic=false,message){
@@ -46,7 +46,7 @@ document.querySelector('#botButton').onclick=()=>{companion.classList.toggle('co
 document.addEventListener('segmentation-started',()=>{guideStage='ready';focusGuideStep(1,true,'第二步 · 试着点击CT中的结节，找到后就能开始写报告啦！')});
 document.addEventListener('segmentation-complete',()=>{guideStage='ready';focusGuideStep(2,true);chime()});
 document.addEventListener('report-opened',()=>{guideStage='ready';focusGuideStep(3,true);chime()});
-document.addEventListener('report-exported',()=>{guideStage='done';document.querySelectorAll('.quest-focus').forEach(e=>e.classList.remove('quest-focus'));document.querySelector('#botMessage').textContent='五步探索完成！病例报告已经导出，可以继续浏览或选择新的病例。';document.querySelector('#nextHint').disabled=false;document.querySelector('#nextHint').textContent='选择新病例 →'});
+document.addEventListener('report-exported',()=>{guideStage='done';document.querySelectorAll('.quest-focus').forEach(e=>e.classList.remove('quest-focus'));document.querySelector('#botMessage').textContent='四步探索完成！病例报告已经导出，可以继续浏览或选择新的病例。';document.querySelector('#nextHint').disabled=false;document.querySelector('#nextHint').textContent='选择新病例 →'});
 document.querySelector('#startExplore').addEventListener('click',()=>{if(guideStage==='done')return;focusGuideStep(ct?(reportUnlocked?3:segmented?2:1):0,true)});
 document.querySelector('.intro h1').innerHTML='肺部 CT 阅片训练<span class="cyan"> · 030</span>';document.querySelector('.intro p').textContent='完成病例阅片、结节定位与报告填写，提交后查看评估与复盘。';
 document.querySelector('.panel-heading span').textContent='训练流程';

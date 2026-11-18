@@ -13,7 +13,7 @@ function localizationIndex(e){
 $('.viewer-head').insertAdjacentHTML('afterend','<div class="localization-tools"><output id="localizationProgress" aria-live="polite">先载入病例，再来找结节吧</output><button id="localizationHint" class="quiet" hidden>✦ 提示</button><p id="localizationBubble" role="status" hidden>再观察一下，也可以点击提示查看结节标注。使用提示后定位计0分。</p></div>');
 function updateLocalization(){
  const required=localizationRequired(),done=localizationFinished(),record=ct?getDraft().localization:null;
- $('#localizationProgress').textContent=!ct?'先载入病例，再来找结节吧':!required?'定位不适用 · 当前影像无有效分割标签':done?`定位完成 · ${record.outcome==='hint'?'已使用提示':`第 ${record.attempts} 次尝试命中`}`:`${localizationActive?'试着点一下CT中的结节吧！':'点击第02步，开始找结节吧'} · 已尝试 ${record.attempts} 次`;
+ $('#localizationProgress').textContent=!ct?'先载入病例，再来找结节吧':!required?'定位不适用 · 当前影像无有效分割标签':done?`定位完成 · ${record.outcome==='hint'?'已使用提示':`第 ${record.attempts} 次尝试命中`}`:`${localizationActive?'试着点一下CT中的结节吧！':'在阅片练习中开始找结节吧'} · 已尝试 ${record.attempts} 次`;
  $('#localizationHint').hidden=$('#localizationBubble').hidden=!required||done||record.attempts<10;
  $('#overlay').disabled=!required||!done;$('#overlay').checked=required&&done&&segmented;
  $('#locate').disabled=!required||!done;
@@ -37,6 +37,7 @@ function completeLocalization(outcome){
 function submitLocalizationPoint(e){
  if(busy||!ct||!localizationActive||measureMode||localizationFinished())return;
  const index=localizationIndex(e);if(index===null)return;
+ const r=getDraft().localization;r.clicks=[...(r.clicks||[]),{index,at:new Date().toISOString()}];
  getDraft().localization.attempts++;
  if(mask[index]){completeLocalization('hit');return}
  saveDraft();updateLocalization();toast('这次还没找到，再观察一下结节的位置吧！');

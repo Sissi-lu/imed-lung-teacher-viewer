@@ -35,3 +35,7 @@ CT上方的测量按钮启用轴位平面直线测量。使用原始体素间距
 定位记录随病例草稿保存到sessionStorage，刷新、切换病例和重置工作台不清零。旧草稿保留答案、文字和测量，旧评价失效，需要完成定位后重新提交。导出JSON包含student.localization和evaluation中的localizationScore、reportScore、reportMax及score。定位不适用时localizationScore为null。
 
 测试：`node tests/localization.test.cjs`、`node tests/teaching.test.cjs`、`node tests/measurement.test.cjs`。部署时同步localization.js，并重启服务以应用静态资源白名单。
+
+## 三难度阅片练习（2026-11-18）
+
+结节定位已并入第01步阅片练习，后续依次为报告填写、评估与复盘、导出训练结果。学习沿用原点击规则；应用使用多边形，创新使用独立SAM2服务。两种新增模式按自选一帧的全部病灶合并mask计算Dice，达到0.50解锁报告。无有效GT的病例不计标注分，报告按100分评价。草稿按病例与难度隔离，提交新增服务端独立留档及ZIP下载。完整操作与启动说明见README。

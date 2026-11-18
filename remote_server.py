@@ -4,11 +4,15 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer,SimpleHTTPRequestHandler
 import xml.etree.ElementTree as ET
 import numpy as np
+import base64, urllib.request, urllib.error
+from practice_api import submit as submit_practice, download as download_practice, frame as practice_frame
 
 ROOT=Path(__file__).resolve().parent
 parser=argparse.ArgumentParser()
 parser.add_argument('--data-root',default='/data5/zhangzhixuan/Med3DVLM/data')
 parser.add_argument('--port',type=int,default=8765)
+parser.add_argument('--sam-api-url',default='http://127.0.0.1:8766')
+parser.add_argument('--practice-output-root',default='/data_new/moyancheng/experiments/imed-lung-teacher-viewer/practice_records')
 args=parser.parse_args(); DATA=Path(args.data_root).resolve()
 W='{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 X='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -106,6 +110,9 @@ class Handler(SimpleHTTPRequestHandler):
      return self.send_json({'error':'学习题库资源尚未配置，请检查数据根目录下的 imaging-basics-v3。'},404)
     mime='application/json; charset=utf-8' if resource.suffix=='.json' else 'image/png'
     return self.send_bytes(resource.read_bytes(),mime)
+   if path=='/api/sam/health':return self.sam_request('GET','/health')
+   archive=re.fullmatch(r'/api/practice/submissions/([^/]+)/download',path)
+   if archive:return self.send_bytes(download_practice(args.practice_output_root,archive.group(1)),'application/zip')
    if path=='/api/cases':
     cases=[]
     for p in (DATA/'Pulm').iterdir():
@@ -120,12 +127,37 @@ class Handler(SimpleHTTPRequestHandler):
     return self.send_bytes(result[kind],'application/octet-stream')
    if path.startswith('/api/'):return self.send_error(404)
    # Serve only UI resources. No arbitrary directory listings or dataset paths.
-   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png','/assets/ei-logo.png','/learning.js','/learning-bank.js','/learning.css'}
+   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png','/assets/ei-logo.png','/practice.js','/practice.css','/learning.js','/learning-bank.js','/learning.css'}
    if path not in allowed:return self.send_error(404)
    super().do_GET()
   except (FileNotFoundError,ValueError,KeyError) as ex:self.send_json({'error':str(ex)},400)
   except Exception as ex:
    print(type(ex).__name__,str(ex),flush=True);self.send_json({'error':'病例读取失败，请查看服务日志'},500)
+ def sam_request(self,method,path,data=None):
+  try:
+   request=urllib.request.Request(args.sam_api_url+path,data=json.dumps(data).encode() if data is not None else None,method=method,headers={'Content-Type':'application/json'})
+   with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request,timeout=120) as response:
+    return self.send_bytes(response.read(),'application/json')
+  except urllib.error.HTTPError as ex:return self.send_bytes(ex.read(),'application/json',ex.code)
+  except Exception:return self.send_json({'error':'SAM服务暂不可用，请检查独立服务后重试'},503)
+ def do_POST(self):
+  try:
+   size=int(self.headers.get('Content-Length','0'))
+   if not 0<size<=8*1024*1024:return self.send_json({'error':'请求体大小无效'},400)
+   data=json.loads(self.rfile.read(size))
+   path=self.path.split('?',1)[0]
+   if path=='/api/practice/submissions':return self.send_json(submit_practice(data,load,args.practice_output_root))
+   if path=='/api/sam/sessions':
+    result=load(str(data['caseId']))
+    return self.sam_request('POST','/sessions',{'imagePng':base64.b64encode(practice_frame(result,data['sliceIndex'])).decode()})
+   if re.fullmatch(r'/api/sam/sessions/[0-9a-f]{32}/predict',path):return self.sam_request('POST',path[len('/api/sam'):],data)
+   return self.send_error(404)
+  except (ValueError,KeyError,TypeError,FileNotFoundError) as ex:self.send_json({'error':str(ex)},400)
+  except Exception as ex:
+   print(type(ex).__name__,str(ex),flush=True);self.send_json({'error':'提交失败，请查看服务日志'},500)
+ def do_DELETE(self):
+  if re.fullmatch(r'/api/sam/sessions/[0-9a-f]{32}',self.path):return self.sam_request('DELETE',self.path[len('/api/sam'):])
+  self.send_error(404)
  def send_json(self,value,status=200):return self.send_bytes(json.dumps(value,ensure_ascii=False).encode(),'application/json; charset=utf-8',status)
  def send_bytes(self,b,mime,status=200):
   self.send_response(status);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(b)));self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(b)
