@@ -2,3 +2,4 @@
 .practice-tools[hidden],.localization-tools[hidden]{display:none!important}
 
 #viewport.practice-drawing{cursor:crosshair}
+.image-info{position:absolute;pointer-events:none;overflow:hidden;z-index:4}.image-info[hidden]{display:none}.image-info .corner{top:8px;bottom:auto;max-width:48%;color:#f2f6fa;text-shadow:0 1px 3px #000,1px 0 3px #000;line-height:1.55}.image-info .tl{left:8px;right:auto}.image-info .tr{right:8px;left:auto;text-align:right}.image-info .corner small{display:block;color:#e0e8ef;font-size:11px}.image-info .corner b{font-weight:normal}.image-info #exam{font-size:9px;color:#b8c6d0}@media(max-width:560px){.image-info .corner{font-size:10px;max-width:49%;top:5px}.image-info .corner small{font-size:9px}.image-info .tl{left:5px}.image-info .tr{right:5px}.image-info #exam{font-size:8px}}

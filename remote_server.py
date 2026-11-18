@@ -93,7 +93,7 @@ def load(cid):
   axial=bool(struct.unpack(e+'h',raw[254:256])[0] and np.all(np.abs(diag)>1e-5) and np.allclose(display_affine,np.diag(diag),atol=1e-4))
   display_geometry={'flipX':bool(axial and diag[0]>0),'flipY':bool(axial and diag[1]>0),'reverseZ':bool(axial and diag[2]>0),'verified':axial}
   doc=word_path(row); docSections=sections(doc)
-  meta={'caseId':cid,'examId':row.get('M','未匹配'),'dims':dims,'spacing':spacing,'target':target,'maskVoxels':int(np.count_nonzero(mask)),'labelCount':len(labels),'labels':labels,'hasMask':bool(labels),'warning':warning,'sections':docSections,'structuredSource':doc.name if docSections else '未找到对应Word报告','findings':row.get('P','未找到Excel影像所见'),'diagnosis':row.get('Q','未找到Excel诊断意见'),'source':'Sheet3 · 第'+str(row.get('row','?'))+'行 · 序号'+cid,'excelRow':row.get('row','?'),'orientationVerified':axial,'displayGeometry':display_geometry}
+  meta={'caseId':cid,'examId':row.get('M','未匹配'),'patientAge':row.get('H','').strip(),'patientSex':row.get('D','').strip(),'dims':dims,'spacing':spacing,'target':target,'maskVoxels':int(np.count_nonzero(mask)),'labelCount':len(labels),'labels':labels,'hasMask':bool(labels),'warning':warning,'sections':docSections,'structuredSource':doc.name if docSections else '未找到对应Word报告','findings':row.get('P','未找到Excel影像所见'),'diagnosis':row.get('Q','未找到Excel诊断意见'),'source':'Sheet3 · 第'+str(row.get('row','?'))+'行 · 序号'+cid,'excelRow':row.get('row','?'),'orientationVerified':axial,'displayGeometry':display_geometry}
   result={'meta':meta,'ct':gzip.compress(np.clip(ct,-32768,32767).astype('<i2').tobytes(),compresslevel=1),'mask':gzip.compress(mask.tobytes(),compresslevel=1)}
   cache.clear();cache[cid]=result;return result
 class Handler(SimpleHTTPRequestHandler):
@@ -127,7 +127,7 @@ class Handler(SimpleHTTPRequestHandler):
     return self.send_bytes(result[kind],'application/octet-stream')
    if path.startswith('/api/'):return self.send_error(404)
    # Serve only UI resources. No arbitrary directory listings or dataset paths.
-   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png','/assets/ei-logo.png','/practice.js','/practice.css','/learning.js','/learning-bank.js','/learning.css'}
+   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png','/assets/ei-logo.png','/practice.js','/practice.css','/image-info.js','/learning.js','/learning-bank.js','/learning.css'}
    if path not in allowed:return self.send_error(404)
    super().do_GET()
   except (FileNotFoundError,ValueError,KeyError) as ex:self.send_json({'error':str(ex)},400)
