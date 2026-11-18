@@ -31,16 +31,29 @@ function updatePractice(){if(!ct)return;const mode=window.practiceMode||'learnin
 updateLocalization=function(){oldUpdateLocalization();updatePractice()};
 startLocalization=function(){if(window.practiceMode==='learning')oldStartLocalization();else submitPractice()};
 function screenXY(p){const f=measurementFrame();const x=displayGeometry.flipX?dims[0]-1-p[0]:p[0],y=displayGeometry.flipY?dims[1]-1-p[1]:p[1];return [f.x+(x+.5)*f.scale,f.y+(y+.5)*f.scale]}
-function drawPractice(){const svg=$('#practiceOverlay');svg.replaceChildren();if(!ct||!example||window.practiceMode==='learning')return;const p=practiceData();if(nativeZ()!==p.sliceIndex)return;
+function drawPractice(){practiceView.classList.toggle('practice-drawing',!!ct&&example&&window.practiceMode==='application'&&!localizationFinished()&&practiceData().sliceIndex!==null&&practiceData().sliceIndex===nativeZ());const svg=$('#practiceOverlay');svg.replaceChildren();if(!ct||!example||window.practiceMode==='learning')return;const p=practiceData();if(nativeZ()!==p.sliceIndex)return;
  const element=(name,attrs)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',name);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));svg.append(n);return n};
  if(window.practiceMode==='application')for(const points of [...p.polygons,practiceDrawing]){element(points===practiceDrawing?'polyline':'polygon',{points:points.map(screenXY).map(v=>v.join(',')).join(' '),fill:points===practiceDrawing?'none':'#ffbd5e55',stroke:'#ffce80','stroke-width':2});for(const point of points){const [cx,cy]=screenXY(point);element('circle',{cx,cy,r:4,fill:'#ffda8d'})}}
  else for(const g of p.groups){if(g.maskPng){const f=measurementFrame();element('image',{href:'data:image/png;base64,'+g.maskPng,x:0,y:0,width:dims[0],height:dims[1],opacity:.4,style:'image-rendering:pixelated;mix-blend-mode:screen',transform:`translate(${f.x+(displayGeometry.flipX?dims[0]*f.scale:0)} ${f.y+(displayGeometry.flipY?dims[1]*f.scale:0)}) scale(${f.scale*(displayGeometry.flipX?-1:1)} ${f.scale*(displayGeometry.flipY?-1:1)})`})}g.points.forEach(point=>{const [cx,cy]=screenXY(point);element('circle',{cx,cy,r:5,fill:point[2]?'#68edac':'#ff7676',stroke:'#fff','stroke-width':1})})}
 }
 const practiceRender=render;render=function(){practiceRender();drawPractice()};
-function closePolygon(){if(practiceDrawing.length<3){toast('至少需要三个顶点');return}practiceData().polygons.push(practiceDrawing);practiceDrawing=[];practiceDirty()}
+function closePolygon(){if(practiceDrawing.length<3){toast('至少需要三个顶点');return}const p=practiceData();p.polygons.push(practiceDrawing);practiceDrawing=[];p.message=`第 ${p.polygons.length} 个病灶已闭合，可新增病灶或提交标注。`;practiceDirty()}
 $('#practiceFrame').onclick=()=>{const p=practiceData();if(p.sliceIndex!==null&&(p.polygons.length||p.groups.length)&&!confirm('重新选帧会清除当前草稿标注，已有提交档案保留。继续？'))return;releasePractice();p.sliceIndex=nativeZ();p.polygons=[];p.groups=[];practiceDrawing=[];practiceObject=0;p.message='';practiceDirty()};
 $('#practiceReturn').onclick=()=>{const z=practiceData().sliceIndex;if(z!==null){$('#slice').value=displayGeometry.reverseZ?dims[2]-1-z:z;render()}};
-$('#practiceNew').onclick=()=>{if(practiceData().sliceIndex===null)return toast('请先选择标注帧');if(window.practiceMode==='application'){if(practiceDrawing.length)closePolygon()}else{practiceData().groups.push({id:practiceUUID(),points:[]});practiceObject=practiceData().groups.length-1;practiceDirty()}};
+$('#practiceNew').onclick=()=>{
+ if(window.practiceMode==='application'){
+  if(practiceData().sliceIndex===null)$('#practiceFrame').click();
+  if(practiceDrawing.length&&practiceDrawing.length<3){toast('当前轮廓至少需要三个顶点，请继续绘制或按 Escape 取消');return}
+  if(practiceDrawing.length)closePolygon();
+  $('#practiceReturn').click();
+  if(measureMode)$('#measureToggle').click();
+  const p=practiceData();p.message=`正在绘制第 ${p.polygons.length+1} 个病灶：点击CT添加顶点，点击起点或按 Enter 闭合轮廓。`;
+  practiceDirty();toast('已开始新病灶，请在CT图像上逐点勾画轮廓');
+ }else{
+  if(practiceData().sliceIndex===null)return toast('请先选择标注帧');
+  practiceData().groups.push({id:practiceUUID(),points:[]});practiceObject=practiceData().groups.length-1;practiceDirty();
+ }
+};
 $('#practiceObject').onchange=e=>{practiceObject=+e.target.value};
 for(const [id,kind]of [['practiceForeground',1],['practiceBackground',0]])$('#'+id).onclick=()=>{practicePointKind=kind;$('#practiceForeground').setAttribute('aria-pressed',String(!!kind));$('#practiceBackground').setAttribute('aria-pressed',String(!kind))};
 $('#practiceUndo').onclick=()=>{const p=practiceData();if(window.practiceMode==='application'){if(practiceDrawing.length)practiceDrawing.pop();else practiceDrawing=p.polygons.pop()||[]}else{const g=p.groups[practiceObject];if(g){g.points.pop();delete g.maskPng;schedulePractice()}}practiceDirty()};
