@@ -30,9 +30,9 @@ def frame(result, z):
     return png(np.clip((image.astype(float) + 1350) / 1500 * 255, 0, 255))
 
 
-def submit(data, load, output):
+def submit(data, load, output=None):
     cid = str(data.get('caseId', ''))
-    if not cid.isdigit():
+    if not re.fullmatch(r'(?:\d+|upload_[0-9a-f]{32})', cid):
         raise ValueError('无效病例编号')
     result = load(cid)
     nx, ny, nz = result['meta']['dims']
@@ -87,6 +87,8 @@ def submit(data, load, output):
         record = data.get('localization', {})
         passed = not applicable or record.get('outcome') in ('hit', 'hint')
         score = None if not applicable else max(0, 25 - 2.5 * (max(1, int(record.get('attempts', 1))) - 1)) if record.get('outcome') == 'hit' else 0
+    if output is None:
+        return dict(dice=dice, passed=passed, threshold=.5, score=score, applicable=applicable)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     submission_id = stamp + '_' + uuid.uuid4().hex
     folder = Path(output) / submission_id

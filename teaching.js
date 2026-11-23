@@ -20,12 +20,12 @@ const doctorArt=`<svg viewBox="0 0 130 150" aria-hidden="true"><ellipse cx="65" 
 const teachingDrafts=new Map();let teachingTab='structured',teachingQuestion=0,teachingBoard=false;
 function draftKey(){return example&&meta?'case:'+meta.caseId+(globalThis.practiceMode&&globalThis.practiceMode!=='learning'?':'+globalThis.practiceMode:''):'local:'+$('#scanInfo').textContent}
 function getDraft(){const key=draftKey();if(!teachingDrafts.has(key)){
- let saved;try{saved=JSON.parse(sessionStorage.getItem('lung-teaching:'+key)||'null')}catch{}
+ let saved;try{saved=JSON.parse(sessionStorage.getItem(globalThis.account?account.cacheKey('teaching:'+key):'lung-teaching:'+key)||'null')}catch{}
  teachingDrafts.set(key,saved?.version===1?saved:{version:1,answers:{},findings:'',diagnosis:'',confirmed:false,submitted:false});
  }const d=teachingDrafts.get(key);
  if(!d.localization){d.localization={attempts:0,outcome:'pending'};d.submitted=false;delete d.evaluation}
  return d}
-function saveDraft(){try{sessionStorage.setItem('lung-teaching:'+draftKey(),JSON.stringify(getDraft()))}catch{}}
+function saveDraft(){try{sessionStorage.setItem(globalThis.account?account.cacheKey('teaching:'+draftKey()):'lung-teaching:'+draftKey(),JSON.stringify(getDraft()))}catch{}}
 function updateDraft(){const d=getDraft();d.submitted=false;teachingBoard=false;$('#evaluate').classList.remove('done');$('#export').classList.remove('done');saveDraft()}
 function composeFindings(a){const parts=[];if(a.count)parts.push('肺内见'+a.count+'结节');if(a.lobe||a.segment)parts.push('目标结节位于'+(a.lobe||'')+(a.segment||''));const size=[a.long,a.short,a.height].filter(v=>v!==undefined&&v!=='');if(size.length)parts.push('所填径线约'+size.join('×')+' mm');if(a.density&&a.density!=='无法判断')parts.push('呈'+a.density+'密度');if(a.shape)parts.push('形态'+a.shape);if(a.boundary)parts.push('边界'+a.boundary);if(a.lobulation&&a.lobulation!=='无法判断')parts.push(a.lobulation==='有'?'可见分叶':'未见分叶');if(a.spiculation&&a.spiculation!=='无法判断')parts.push(a.spiculation==='有'?'可见毛刺':'未见毛刺');if(a.signs?.length)parts.push('邻近征象：'+a.signs.join('、'));if(a.enhance)parts.push('增强评估：'+a.enhance);if(a.comparison)parts.push('既往对比：'+a.comparison);return parts.length?parts.join('；')+'。':''}
 function referenceAnswers(){if(!example||!meta?.sections?.length)return{};

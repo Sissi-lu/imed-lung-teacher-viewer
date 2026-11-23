@@ -11,7 +11,8 @@ const zlib=require('node:zlib');
   if(kind==='meta')return route.fulfill({json:{caseId:id,examId:'ORIGINAL-EXAM-'+id,dims:[64,64,2],spacing:[.7,.8,1.2],target:0,hasMask:true,maskVoxels:1,sections:[],patientAge:id==='30'?'61岁':id==='6'?'73岁':'',patientSex:id==='30'?'女':id==='6'?'男':'',displayGeometry:{flipX:false,flipY:false,reverseZ:false,verified:true}}});
   return route.fulfill({body:zlib.gzipSync(Buffer.alloc(kind==='ct'?16384:8192)),contentType:'application/octet-stream'});
  });
- await page.goto(process.env.PRACTICE_BASE_URL||'http://127.0.0.1:8765/');await page.click('#startExplore');
+ await require('./account_fixture.cjs')(page);
+await page.goto(process.env.PRACTICE_BASE_URL||'http://127.0.0.1:8765/');await page.click('#startExplore');
  async function select(id){await page.locator('.case-option').filter({hasText:'CASE '+id}).click();await page.waitForFunction(id=>!busy&&meta?.caseId===id,id);await page.waitForFunction(()=>!document.querySelector('#imageInfo').hidden)}
  async function checkBounds(){
   await page.waitForFunction(()=>{

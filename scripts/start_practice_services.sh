@@ -22,6 +22,7 @@ if [[ "$service" == viewer || "$service" == all ]]; then
   else
     screen -dmS imed-lung-viewer-8765 -L -Logfile "$log_dir/viewer.log" \
       "${VIEWER_PYTHON:-/data_new/moyancheng/envs/imed-lung-teacher-viewer/bin/python}" -u remote_server.py \
+      --user-data-root "${USER_DATA_ROOT:-/data_new/moyancheng/experiments/imed-lung-teacher-viewer/account_data}" \
       --data-root "${DATA_ROOT:-/data5/zhangzhixuan/Med3DVLM/data}" --port 8765 \
       --sam-api-url http://127.0.0.1:8766 \
       --practice-output-root "${PRACTICE_OUTPUT_ROOT:-/data_new/moyancheng/experiments/imed-lung-teacher-viewer/practice_records}"

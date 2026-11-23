@@ -5,6 +5,8 @@ from http.server import ThreadingHTTPServer,SimpleHTTPRequestHandler
 import xml.etree.ElementTree as ET
 import numpy as np
 import base64, urllib.request, urllib.error
+from account_store import Store, DEFAULT_ROOT, ApiError
+from account_http import AccountHandler
 from practice_api import submit as submit_practice, download as download_practice, frame as practice_frame
 
 ROOT=Path(__file__).resolve().parent
@@ -13,6 +15,8 @@ parser.add_argument('--data-root',default='/data5/zhangzhixuan/Med3DVLM/data')
 parser.add_argument('--port',type=int,default=8765)
 parser.add_argument('--sam-api-url',default='http://127.0.0.1:8766')
 parser.add_argument('--practice-output-root',default='/data_new/moyancheng/experiments/imed-lung-teacher-viewer/practice_records')
+parser.add_argument('--user-data-root',default=DEFAULT_ROOT)
+parser.add_argument('--secure-cookie',action='store_true')
 args=parser.parse_args(); DATA=Path(args.data_root).resolve()
 W='{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 X='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -96,7 +100,7 @@ def load(cid):
   meta={'caseId':cid,'examId':row.get('M','未匹配'),'patientAge':row.get('H','').strip(),'patientSex':row.get('D','').strip(),'dims':dims,'spacing':spacing,'target':target,'maskVoxels':int(np.count_nonzero(mask)),'labelCount':len(labels),'labels':labels,'hasMask':bool(labels),'warning':warning,'sections':docSections,'structuredSource':doc.name if docSections else '未找到对应Word报告','findings':row.get('P','未找到Excel影像所见'),'diagnosis':row.get('Q','未找到Excel诊断意见'),'source':'Sheet3 · 第'+str(row.get('row','?'))+'行 · 序号'+cid,'excelRow':row.get('row','?'),'orientationVerified':axial,'displayGeometry':display_geometry}
   result={'meta':meta,'ct':gzip.compress(np.clip(ct,-32768,32767).astype('<i2').tobytes(),compresslevel=1),'mask':gzip.compress(mask.tobytes(),compresslevel=1)}
   cache.clear();cache[cid]=result;return result
-class Handler(SimpleHTTPRequestHandler):
+class BaseHandler(SimpleHTTPRequestHandler):
  protocol_version='HTTP/1.1'
  def __init__(self,*a,**kw):super().__init__(*a,directory=str(ROOT),**kw)
  def do_GET(self):
@@ -119,17 +123,20 @@ class Handler(SimpleHTTPRequestHandler):
      if p.is_dir() and p.name.isdigit() and (p/(p.name+'.nii.gz')).is_file():
       r=ROWS.get(p.name,{})
       cases.append({'id':p.name,'examId':r.get('M','未匹配'),'hasWord':word_path(r).is_file(),'hasMask':(p/(p.name+'.seg.nrrd')).is_file(),'hasReport':bool(r.get('P'))})
-    return self.send_json({'server':'70服务器','cases':sorted(cases,key=lambda c:int(c['id']))})
-   match=re.fullmatch(r'/api/cases/(\d+)/(meta|ct|mask)',path)
+    with self.store.db() as db:
+     imports=db.execute("SELECT id,name FROM resources WHERE user_id=? AND kind='upload'",(self.user['id'],)).fetchall()
+    return self.send_json({'server':'70服务器','cases':sorted(cases,key=lambda c:int(c['id']))+[{'id':r['id'],'name':r['name'],'examId':r['name'],'hasMask':False,'hasWord':False,'hasReport':False} for r in imports]})
+   match=re.fullmatch(r'/api/cases/(\d+|upload_[0-9a-f]{32})/(meta|ct|mask)',path)
    if match:
-    cid,kind=match.groups(); result=load(cid)
+    cid,kind=match.groups(); result=self.load_case(cid)
     if kind=='meta':return self.send_json(result['meta'])
     return self.send_bytes(result[kind],'application/octet-stream')
    if path.startswith('/api/'):return self.send_error(404)
    # Serve only UI resources. No arbitrary directory listings or dataset paths.
-   allowed={'/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png','/assets/ei-logo.png','/practice.js','/practice.css','/image-info.js','/learning.js','/learning-bank.js','/learning.css'}
+   allowed={'/accounts.js','/accounts.css','/account-workspace.js','/','/index.html','/style.css','/game.css','/app.js','/game.js','/result-provider.js','/cases.js','/localization.js','/teaching.js','/teaching.css','/measurement.js','/cartoon.js','/cartoon.css','/assets/lab-emblem.png','/assets/ei-logo.png','/practice.js','/practice.css','/image-info.js','/learning.js','/learning-bank.js','/learning.css'}
    if path not in allowed:return self.send_error(404)
    super().do_GET()
+  except ApiError as ex:self.send_json({'error':str(ex)},ex.status)
   except (FileNotFoundError,ValueError,KeyError) as ex:self.send_json({'error':str(ex)},400)
   except Exception as ex:
    print(type(ex).__name__,str(ex),flush=True);self.send_json({'error':'病例读取失败，请查看服务日志'},500)
@@ -137,7 +144,9 @@ class Handler(SimpleHTTPRequestHandler):
   try:
    request=urllib.request.Request(args.sam_api_url+path,data=json.dumps(data).encode() if data is not None else None,method=method,headers={'Content-Type':'application/json'})
    with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request,timeout=120) as response:
-    return self.send_bytes(response.read(),'application/json')
+    body=response.read()
+    if method=='POST' and path=='/sessions':self.store.own_resource(json.loads(body)['sessionId'],self.user,'sam')
+    return self.send_bytes(body,'application/json')
   except urllib.error.HTTPError as ex:return self.send_bytes(ex.read(),'application/json',ex.code)
   except Exception:return self.send_json({'error':'SAM服务暂不可用，请检查独立服务后重试'},503)
  def do_POST(self):
@@ -146,12 +155,16 @@ class Handler(SimpleHTTPRequestHandler):
    if not 0<size<=8*1024*1024:return self.send_json({'error':'请求体大小无效'},400)
    data=json.loads(self.rfile.read(size))
    path=self.path.split('?',1)[0]
-   if path=='/api/practice/submissions':return self.send_json(submit_practice(data,load,args.practice_output_root))
+   if path=='/api/practice/submissions':
+    result=submit_practice(data,self.load_case,args.practice_output_root)
+    self.store.own_resource(result['submissionId'],self.user,'submission')
+    return self.send_json(result)
    if path=='/api/sam/sessions':
-    result=load(str(data['caseId']))
+    result=self.load_case(str(data['caseId']))
     return self.sam_request('POST','/sessions',{'imagePng':base64.b64encode(practice_frame(result,data['sliceIndex'])).decode()})
    if re.fullmatch(r'/api/sam/sessions/[0-9a-f]{32}/predict',path):return self.sam_request('POST',path[len('/api/sam'):],data)
    return self.send_error(404)
+  except ApiError as ex:self.send_json({'error':str(ex)},ex.status)
   except (ValueError,KeyError,TypeError,FileNotFoundError) as ex:self.send_json({'error':str(ex)},400)
   except Exception as ex:
    print(type(ex).__name__,str(ex),flush=True);self.send_json({'error':'提交失败，请查看服务日志'},500)
@@ -161,5 +174,11 @@ class Handler(SimpleHTTPRequestHandler):
  def send_json(self,value,status=200):return self.send_bytes(json.dumps(value,ensure_ascii=False).encode(),'application/json; charset=utf-8',status)
  def send_bytes(self,b,mime,status=200):
   self.send_response(status);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(b)));self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(b)
+class Handler(AccountHandler,BaseHandler):
+ store=Store(args.user_data_root)
+ secure_cookie=args.secure_cookie
+ clinical_load=staticmethod(load)
+ grade_preview=staticmethod(submit_practice)
+
 print('Serving laboratory UI on port',args.port,'data',DATA,flush=True)
 ThreadingHTTPServer(('0.0.0.0',args.port),Handler).serve_forever()
