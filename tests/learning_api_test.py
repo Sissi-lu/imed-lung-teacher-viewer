@@ -24,13 +24,15 @@ class LearningApiTest(unittest.TestCase):
         (bank / 'review-record.json').write_text('private-review', encoding='utf-8')
         project = Path(__file__).resolve().parents[1]
         source = ast.parse((project / 'remote_server.py').read_text(encoding='utf-8'))
-        handler = next(node for node in source.body if isinstance(node, ast.ClassDef) and node.name == 'Handler')
+        handler = next(node for node in source.body if isinstance(node, ast.ClassDef) and node.name == 'BaseHandler')
         namespace = {
             'SimpleHTTPRequestHandler': SimpleHTTPRequestHandler,
             'ROOT': project, 'DATA': self.data, 're': re, 'json': json,
             'load': lambda case_id: {'meta': {'caseId': case_id}, 'ct': b'ct', 'mask': b'mask'},
         }
         exec(compile(ast.Module(body=[handler], type_ignores=[]), 'remote_server.py', 'exec'), namespace)
+        namespace['Handler']=namespace['BaseHandler']
+        namespace['Handler'].load_case=staticmethod(namespace['load'])
         namespace['Handler'].log_message = lambda *args: None
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), namespace['Handler'])
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)

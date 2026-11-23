@@ -20,6 +20,6 @@ window.resultProvider={
  }
 };
 window.resultProvider.ready=(async()=>{
- try{const r=await fetch('/api/cases');if(!r.ok)return;const data=await r.json();if(Array.isArray(data.cases)){window.resultProvider.mode='server';window.resultProvider.catalog=data.cases}}
+ try{if(window.account)await account.ready;const r=await fetch('/api/cases');if(!r.ok)return;const data=await r.json();if(Array.isArray(data.cases)){window.resultProvider.mode='server';window.resultProvider.catalog=data.cases}}
  catch{/* Local preview retains its bundled example. */}
 })();

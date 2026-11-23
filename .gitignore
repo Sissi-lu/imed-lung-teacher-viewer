@@ -2,3 +2,11 @@ data/
 deploy.tar
 __pycache__/
 *.pyc
+
+node_modules/
+test-results/
+
+# Account databases and uploaded medical images belong outside the repository.
+account_data/
+*.sqlite3
+*.sqlite3-journal

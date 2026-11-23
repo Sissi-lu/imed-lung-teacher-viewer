@@ -1,0 +1,1 @@
+{"private":true,"scripts":{"test:browser":"node tests/practice_browser.cjs && node tests/image_info_browser.cjs"},"devDependencies":{"playwright":"1.48.2"}}

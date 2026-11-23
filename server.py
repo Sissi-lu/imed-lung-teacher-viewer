@@ -1,6 +1,5 @@
-from http.server import ThreadingHTTPServer,SimpleHTTPRequestHandler
+"""Local entry point for the authenticated viewer service."""
 from pathlib import Path
-import os
-os.chdir(Path(__file__).resolve().parent)
-print('LUNG LAB http://127.0.0.1:8765',flush=True)
-ThreadingHTTPServer(('127.0.0.1',8765),SimpleHTTPRequestHandler).serve_forever()
+import runpy
+
+runpy.run_path(str(Path(__file__).resolve().with_name('remote_server.py')), run_name='__main__')

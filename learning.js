@@ -49,9 +49,17 @@
   mobileEntry.className = 'lb-mobile-entry';
   document.querySelector('.intro').after(mobileEntry);
 
+  let accountLearningRevision=0, learningTimer, learningQueue=Promise.resolve(), learningConflict=false;
+  function saveLearning(){
+    clearTimeout(learningTimer);if(!bank||learningConflict)return learningQueue;
+    const value=JSON.parse(JSON.stringify(saved));learningQueue=learningQueue.catch(()=>{}).then(async()=>{if(learningConflict)return;try{const out=await account.request('/api/progress',{key:'learning:'+bank.version,value,revision:accountLearningRevision});accountLearningRevision=out.revision;storageAvailable=true}catch(e){storageAvailable=false;learningConflict=e.status===409;toast(e.message);if(!learningConflict)queueSave();throw e}});learningQueue.catch(()=>{});return learningQueue;
+  }
+  function queueSave(){clearTimeout(learningTimer);if(!learningConflict)learningTimer=setTimeout(saveLearning,500)}
+  if(window.account)account.flushLearning=saveLearning;
   function persist() {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(saved));
+      localStorage.setItem(window.account?account.cacheKey(storageKey):storageKey, JSON.stringify(saved));
+      if(window.account) queueSave();
       storageAvailable = true;
     } catch {
       storageAvailable = false;
@@ -75,7 +83,8 @@
         }
         storageKey = 'lung-lab-imaging-basics:' + nextBank.version;
         let stored;
-        try { stored = JSON.parse(localStorage.getItem(storageKey)); } catch { /* Use a fresh attempt. */ }
+        if(window.account){const progress=await account.request('/api/progress?key='+encodeURIComponent('learning:'+nextBank.version));stored=progress.value;accountLearningRevision=progress.revision;}
+        try { if(!window.account)stored = JSON.parse(localStorage.getItem(storageKey)); } catch { /* Use a fresh attempt. */ }
         saved = tools.hydrate(nextBank, stored);
         displayNumbers = tools.createDisplayNumbers(nextBank.questions);
         bank = nextBank;
@@ -105,6 +114,7 @@
   entry.onclick = mobileEntry.onclick = openLearning;
 
   function returnToWork() {
+    if(window.account)saveLearning().catch(()=>{});
     root.querySelector('dialog[open]')?.close();
     root.hidden = true;
     app.hidden = false;
@@ -171,7 +181,7 @@
         <h2>你的学习足迹</h2>
         <div class="lb-ring" style="--progress:${result.answered / result.total * 100}%"><div><strong>${result.answered}<small> / ${result.total}</small></strong><span>已提交练习</span></div></div>
         <div class="lb-progress-caption"><span>知识卡片已浏览</span><b>${saved.viewed.length} / ${topics.length}</b></div>
-        <p>${storageAvailable ? '进度保存在当前浏览器' : '本次进度保留在当前页面'}</p>
+        <p>${storageAvailable ? (window.account?'进度自动保存到当前账号':'进度保存在当前浏览器') : '本次进度保留在当前页面'}</p>
       </aside>
     </div>
     <div class="lb-section-title"><h2>先认识，再判断</h2></div>
