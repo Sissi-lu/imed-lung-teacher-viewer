@@ -2,8 +2,8 @@ const assert=require('node:assert/strict');const {chromium}=require('playwright'
 (async()=>{const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1600,height:1100}});let errors=[];page.on('pageerror',e=>errors.push(e.message));
 const dims=[32,32,2],ct=Buffer.alloc(4096),mask=Buffer.alloc(2048);for(let y=10;y<=20;y++)for(let x=10;x<=20;x++)mask[y*32+x]=mask[1024+y*32+x]=1;
 await page.route('**/api/cases',r=>r.fulfill({json:{cases:[{id:'30',examId:'TEST',hasMask:true,hasReport:true}]}}));
-await page.route('**/api/cases/30/*',r=>{let kind=r.request().url().split('/').pop();if(kind==='meta')return r.fulfill({json:{caseId:'30',examId:'TEST',dims,spacing:[1,1,1],target:0,maskVoxels:121,hasMask:true,sections:[],displayGeometry:{flipX:false,flipY:false,reverseZ:false,verified:true}}});return r.fulfill({body:zlib.gzipSync(kind==='ct'?ct:mask),contentType:'application/octet-stream'})});
-await page.route('**/api/practice/submissions',r=>r.fulfill({json:{submissionId:'test',passed:true,dice:.75,score:18.75,applicable:true}}));
+await page.route('**/api/cases/30/*',r=>{let kind=r.request().url().split('/').pop();if(kind==='meta')return r.fulfill({json:{caseId:'30',examId:'TEST',dims,spacing:[1,1,1],target:0,maskVoxels:121,hasMask:true,sections:[{title:'径线',rows:[['结节径线','长径__11__ mm × 垂直短径__7__ mm；另测上下径__14__ mm']]}],displayGeometry:{flipX:false,flipY:false,reverseZ:false,verified:true}}});return r.fulfill({body:zlib.gzipSync(kind==='ct'?ct:mask),contentType:'application/octet-stream'})});
+await page.route('**/api/practice/submissions',r=>r.fulfill({json:{submissionId:'test',passed:true,dice:.75,score:18.75,applicable:true,precision:.6,recall:1}}));
 await require('./account_fixture.cjs')(page);
 await page.goto(process.env.PRACTICE_BASE_URL||'http://127.0.0.1:8765/');
 assert.equal(await page.locator('.launch-actions button').count(),1);assert.equal(await page.locator('.launch-actions button').getAttribute('id'),'startExplore');assert.equal(await page.locator('#selectCaseLaunch, #startImport').count(),0);
@@ -22,6 +22,33 @@ async function assertOwnMasksOnly(){
  await page.evaluate(()=>{displayGeometry.reverseZ=false;document.querySelector('#slice').value=0;render()});console.log('own masks only on annotated slice passed');
 }
 await assertNoGtPixels();
+assert.match(await page.locator('#practiceFeedback').textContent(),/收紧多画/);
+await page.evaluate(()=>{const d=getDraft();d.answers={long:'7',short:'11'};d.findings='教学测试影像所见';d.diagnosis='教学测试诊断意见';submitLesson()});
+assert.match(await page.locator('.blackboard').textContent(),/可能把长短径填反/);
+assert.equal(await page.locator('.blackboard > .feedback-list').first().locator('li').count(),3);
+assert.equal(await page.evaluate(()=>getDraft().evaluation.localizationScore),18.75);
+assert.equal(await page.evaluate(()=>getDraft().evaluation.feedback.summary.length),3);
+for(const skin of ['mint','peach','sunshine','lavender','ocean','forest','sakura','night']){await page.selectOption('#skinPicker',skin);assert.match(await page.locator('.blackboard').textContent(),/可能把长短径填反/)}
+await page.selectOption('#skinPicker','mint');
+if(process.env.FEEDBACK_REVIEW_SCREENSHOT)await page.screenshot({path:process.env.FEEDBACK_REVIEW_SCREENSHOT,fullPage:true});
+const downloadEvent=page.waitForEvent('download');await page.click('#export');const download=await downloadEvent;
+const exported=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
+assert.match(exported.student.evaluation.feedback.summary.join(' '),/长短径填反/);
+await page.evaluate(()=>{delete getDraft().evaluation.feedback;showReview()});
+assert.match(await page.locator('.blackboard').textContent(),/长短径填反/);
+assert.equal(await page.evaluate(()=>getDraft().evaluation.feedback),undefined,'historical feedback fallback never rewrites saved evaluation');
+await page.click('#reviseLesson');await page.evaluate(()=>{getDraft().answers.long='11';updateDraft()});
+assert.equal(await page.evaluate(()=>getDraft().evaluation),undefined,'editing invalidates suggestions');
+await page.click('#practiceEdit');
+await page.route('**/api/practice/submissions',r=>r.fulfill({json:{submissionId:'retry',passed:false,dice:.4,score:10,applicable:true,precision:.4,recall:.4}}));
+await page.click('#analyze');await page.waitForFunction(()=>!practicePending);
+assert.match(await page.locator('#practiceFeedback').textContent(),/尚未覆盖/);
+assert.match(await page.locator('#practiceFeedback').textContent(),/超出参考/);
+await page.click('#report');assert.equal(await page.evaluate(()=>reportUnlocked),false);
+await page.route('**/api/practice/submissions',r=>r.fulfill({json:{submissionId:'pass',passed:true,dice:.75,score:18.75,applicable:true,precision:.6,recall:1}}));
+await page.click('#analyze');await page.waitForFunction(()=>localizationFinished());
+if(process.env.FEEDBACK_SCREENSHOT)await page.screenshot({path:process.env.FEEDBACK_SCREENSHOT,fullPage:true});
+console.log('feedback: coaching, grading invariants, export, historical fallback and failed submission passed');
 async function restartAndCheck(){
  page.once('dialog',dialog=>dialog.accept());await page.click('#practiceRestart');
  assert.deepEqual(await page.evaluate(()=>({frame:practiceData().sliceIndex,polygons:practiceData().polygons.length,groups:practiceData().groups.length,drawing:practiceDrawing.length,done:localizationFinished(),overlay:document.querySelector('#overlay').checked,reportUnlocked,submitted:getDraft().submitted})),{frame:null,polygons:0,groups:0,drawing:0,done:false,overlay:false,reportUnlocked:false,submitted:false});

@@ -87,22 +87,28 @@ def submit(data, load, output=None):
         record = data.get('localization', {})
         passed = not applicable or record.get('outcome') in ('hit', 'hint')
         score = None if not applicable else max(0, 25 - 2.5 * (max(1, int(record.get('attempts', 1))) - 1)) if record.get('outcome') == 'hit' else 0
+    precision = recall = None
+    if applicable and mode != 'learning' and gt.any():
+        overlap = int(np.count_nonzero(predicted & gt))
+        precision = float(overlap / predicted.sum())
+        recall = float(overlap / gt.sum())
+    grading = dict(dice=dice, passed=passed, threshold=.5, score=score,
+                   applicable=applicable, precision=precision, recall=recall)
+    if applicable and mode != 'learning' and not gt.any():
+        grading['message'] = '该帧没有参考病灶，请重新选择切片后标注。'
     if output is None:
-        return dict(dice=dice, passed=passed, threshold=.5, score=score, applicable=applicable)
+        return grading
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
     submission_id = stamp + '_' + uuid.uuid4().hex
     folder = Path(output) / submission_id
     folder.mkdir(parents=True, exist_ok=False)
-    metadata = {**data, 'submissionId': submission_id, 'createdAt': stamp, 'dice': dice,
-                'passed': passed, 'threshold': .5, 'score': score, 'applicable': applicable}
+    metadata = {**data, 'submissionId': submission_id, 'createdAt': stamp, **grading}
     metadata.pop('maskPng', None)
     (folder / 'submission.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2))
     (folder / 'image.png').write_bytes(frame_png)
     (folder / 'mask.png').write_bytes(png(predicted * 255))
-    response = {k: metadata[k] for k in ('submissionId', 'dice', 'passed', 'threshold', 'score', 'applicable')}
-    if applicable and mode != 'learning' and not gt.any():
-        response['message'] = '该帧没有参考病灶，请重新选择切片后标注。'
-    return response
+    return {'submissionId': submission_id, **grading}
+
 
 
 def download(output, submission_id):

@@ -55,6 +55,50 @@ class PracticeTest(unittest.TestCase):
         self.assertTrue(r['passed'])
         self.assertIsNone(r['score'])
 
+    def test_coaching_metrics(self):
+        r = self.submit()
+        self.assertEqual(r['precision'], 1)
+        self.assertAlmostEqual(r['recall'], 1 / 3)
+        preview = submit(self.data, lambda cid: self.result)
+        self.assertEqual(preview['precision'], r['precision'])
+        with zipfile.ZipFile(io.BytesIO(download(self.temp.name, r['submissionId']))) as z:
+            self.assertEqual(json.loads(z.read('submission.json'))['recall'], r['recall'])
+        self.result['mask'] = gzip.compress((self.pred > 0)[None].repeat(2, axis=0).astype('uint8').tobytes())
+        self.assertEqual(self.submit()['dice'], 1)
+        self.assertEqual(self.submit()['recall'], 1)
+        self.pred[0, 1:3] = 255
+        self.data['maskPng'] = base64.b64encode(png(self.pred)).decode()
+        self.assertAlmostEqual(self.submit()['precision'], 1 / 3)
+        self.assertEqual(self.submit()['recall'], 1)
+        self.result['meta']['maskVoxels'] = 0
+        self.assertIsNone(self.submit()['precision'])
+        self.assertIsNone(self.submit()['recall'])
+        self.result['meta']['maskVoxels'] = 3
+        self.result['mask'] = gzip.compress(np.zeros((2, 4, 4), dtype='uint8').tobytes())
+        self.assertIsNone(self.submit()['recall'])
+        self.assertIn('重新选择', self.submit()['message'])
+        self.data.update(mode='learning', localization={'attempts': 1, 'outcome': 'hit'})
+        self.assertIsNone(self.submit()['precision'])
+        self.assertEqual(self.submit()['score'], 25)
+
+    def test_metrics_target_and_failed_attempt(self):
+        gt = np.zeros((2, 4, 4), dtype='uint8')
+        gt[0].flat[:5] = 1
+        self.result['mask'] = gzip.compress(gt.tobytes())
+        self.pred[:] = 0
+        self.pred.flat[:4] = 255
+        self.pred.flat[5] = 255
+        self.data['maskPng'] = base64.b64encode(png(self.pred)).decode()
+        r = self.submit()
+        self.assertEqual((r['precision'], r['recall'], r['dice'], r['score']), (.8, .8, .8, 20))
+        self.pred.flat[:4] = 0
+        self.pred.flat[0] = 255
+        self.data['maskPng'] = base64.b64encode(png(self.pred)).decode()
+        r = self.submit()
+        self.assertFalse(r['passed'])
+        self.assertEqual(r['precision'], .5)
+        self.assertEqual(r['recall'], .2)
+
     def test_invalid_frame_and_empty_mask(self):
         self.data['sliceIndex'] = -1
         with self.assertRaises(ValueError): self.submit()
