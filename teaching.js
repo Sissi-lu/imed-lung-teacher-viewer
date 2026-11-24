@@ -26,7 +26,7 @@ function getDraft(){const key=draftKey();if(!teachingDrafts.has(key)){
  if(!d.localization){d.localization={attempts:0,outcome:'pending'};d.submitted=false;delete d.evaluation}
  return d}
 function saveDraft(){try{sessionStorage.setItem(globalThis.account?account.cacheKey('teaching:'+draftKey()):'lung-teaching:'+draftKey(),JSON.stringify(getDraft()))}catch{}}
-function updateDraft(){const d=getDraft();d.submitted=false;teachingBoard=false;$('#evaluate').classList.remove('done');$('#export').classList.remove('done');saveDraft()}
+function updateDraft(){const d=getDraft();d.submitted=false;delete d.evaluation;teachingBoard=false;$('#evaluate').classList.remove('done');$('#export').classList.remove('done');saveDraft()}
 function composeFindings(a){const parts=[];if(a.count)parts.push('肺内见'+a.count+'结节');if(a.lobe||a.segment)parts.push('目标结节位于'+(a.lobe||'')+(a.segment||''));const size=[a.long,a.short,a.height].filter(v=>v!==undefined&&v!=='');if(size.length)parts.push('所填径线约'+size.join('×')+' mm');if(a.density&&a.density!=='无法判断')parts.push('呈'+a.density+'密度');if(a.shape)parts.push('形态'+a.shape);if(a.boundary)parts.push('边界'+a.boundary);if(a.lobulation&&a.lobulation!=='无法判断')parts.push(a.lobulation==='有'?'可见分叶':'未见分叶');if(a.spiculation&&a.spiculation!=='无法判断')parts.push(a.spiculation==='有'?'可见毛刺':'未见毛刺');if(a.signs?.length)parts.push('邻近征象：'+a.signs.join('、'));if(a.enhance)parts.push('增强评估：'+a.enhance);if(a.comparison)parts.push('既往对比：'+a.comparison);return parts.length?parts.join('；')+'。':''}
 function referenceAnswers(){if(!example||!meta?.sections?.length)return{};
  const rows=meta.sections.flatMap(s=>s.rows);const text=label=>rows.filter(r=>r[0].includes(label)).map(r=>r[1]).join('\n');
@@ -37,13 +37,57 @@ function referenceAnswers(){if(!example||!meta?.sections?.length)return{};
  const sizes=text('结节径线');for(const [key,re]of [['long',/长径[_\s]*([\d.]+)/],['short',/短径[_\s]*([\d.]+)/],['height',/上下径[_\s]*([\d.]+)/]]){const m=sizes.match(re);if(m)ref[key]=m[1]}
  return ref;
 }
+// Feedback describes saved observations and reference comparisons; it never changes scores.
+function practiceAdvice(r={}){
+ const item=(kind,text)=>({kind,text});
+ if(r.applicable===false)return [item('info','本病例没有有效参考标注，可以继续练习，本次不判断漏画或多画。')];
+ if(r.mode&&r.mode!=='learning'){
+  if(r.message&&r.precision==null&&r.recall==null)return [item('improve',r.message)];
+  const advice=[],manual=r.mode==='application';
+  if(typeof r.recall==='number'&&Number.isFinite(r.recall)&&r.recall<.8)advice.push(item('improve',`参考区域覆盖率为 ${(r.recall*100).toFixed(1)}%，部分参考区域尚未覆盖。${manual?'建议返回标注帧，检查并补全遗漏的轮廓。':'建议返回标注帧，核对并补充遗漏区域的前景点。'}`));
+  if(typeof r.precision==='number'&&Number.isFinite(r.precision)&&r.precision<.8)advice.push(item('improve',`标注准确率为 ${(r.precision*100).toFixed(1)}%，部分标注超出参考区域。${manual?'建议检查轮廓边缘，收紧多画的部分。':'建议核对背景点，排除不属于目标的区域。'}`));
+  if(advice.length)return advice;
+  if(typeof r.dice!=='number'||!Number.isFinite(r.dice))return [item('info','本次缺少可比较的分割指标，请结合影像人工复盘。')];
+  if(r.precision==null||r.recall==null)return [item('info',`本次 Dice 为 ${r.dice.toFixed(3)}，历史记录缺少覆盖率和标注准确率。建议重新检查轮廓或提示点，暂不能判断具体漏画或多画。`)];
+  return [item('positive','本次覆盖率和标注准确率均达到80%的练习目标，继续保持逐帧核对边界的习惯。')];
+ }
+ if(r.outcome==='hint')return [item('improve','本次借助提示完成定位。建议再浏览目标附近的相邻切片，记住结节的位置与外观，下次试着独立找到它。')];
+ if(r.outcome==='hit')return [r.attempts>1?item('improve',`本次第 ${r.attempts} 次尝试找到目标。下次可以先连续浏览相邻切片，确认位置后再点击。`):item('positive','第一次就找到了目标，继续保持先观察、再确认位置的习惯！')];
+ return [];
+}
+function reviewFeedback(d,e){
+ const filled=value=>Array.isArray(value)?value.length>0:value!==undefined&&value!=='';
+ const comparisons=e.comparisons||[],answers=d.answers||{},fields=[],report=[],reference=id=>comparisons.find(c=>c.id===id||c.label===teachingFields.find(f=>f.id===id)?.label);
+ const long=reference('long'),short=reference('short'),numeric=v=>v!==''&&v!==undefined&&v!==null&&Number.isFinite(Number(v));
+ const swapped=long&&short&&!long.correct&&!short.correct&&[long.answer,short.answer,long.reference,short.reference].every(numeric)&&Math.abs(Number(long.answer)-Number(short.reference))<=.5&&Math.abs(Number(short.answer)-Number(long.reference))<=.5;
+ for(const f of teachingFields){
+  const c=reference(f.id),missing=!filled(answers[f.id]);let text,priority;
+  if(missing){text=`${f.label}暂未记录，建议回到影像补充观察；没有把握时可以先留空，不要把未填写当成阴性。`;priority=3}
+  else if(c&&!c.correct){
+   if(f.kind==='number'){
+    priority=0;
+    if(!numeric(c.answer)||!numeric(c.reference))text=`${f.label}的数值格式需要核对，请确认填写的是有效的毫米数值。`;
+    else{const delta=Number(c.answer)-Number(c.reference);text=`${f.label}填写 ${c.answer} mm，参考为 ${c.reference} mm，${delta>0?'偏大':'偏小'} ${Number(Math.abs(delta).toFixed(2))} mm，超出当前±0.5 mm容差。${swapped&&['long','short'].includes(f.id)?'可能把长短径填反了，建议核对对应栏位。':'建议回到CT，使用测量工具重新核对径线，再确认填写位置。'}`}
+   }else{priority=2;text=`${f.label}选择“${c.answer}”，参考为“${c.reference}”。建议重新观察对应影像，再核对所选类型。`}
+  }
+  if(text){fields.push({id:f.id,text});report.push({priority,text})}
+ }
+ report.sort((a,b)=>a.priority-b.priority);
+ const practice=e.localizationScore===null?[]:practiceAdvice(d.localization),improvements=practice.filter(x=>x.kind==='improve');
+ const summary=report.slice(0,improvements.length?2:3).map(x=>x.text);
+ if(improvements.length)summary.push(improvements[0].text);
+ if(!summary.length)summary.push(e.completionOnly?'本次已完成观察记录；缺少可比较参考字段，请结合原始影像人工复核。':'本次可比较字段均与参考一致，继续保持先观察影像、再完成描述的习惯。');
+ return {summary,fields,practice};
+}
+function feedbackList(items){return '<ul class="feedback-list">'+items.map(text=>'<li>'+escape(text)+'</li>').join('')+'</ul>'}
 function evaluateDraft(d,ref=referenceAnswers()){
  const complete=teachingFields.filter(f=>Array.isArray(d.answers[f.id])?d.answers[f.id].length:d.answers[f.id]!==undefined&&d.answers[f.id]!=='').length;
- const comparisons=teachingFields.filter(f=>ref[f.id]!==undefined).map(f=>({label:f.label,answer:d.answers[f.id]??'未填写',reference:ref[f.id],correct:f.kind==='number'?d.answers[f.id]!==''&&d.answers[f.id]!==undefined&&Math.abs(Number(d.answers[f.id])-Number(ref[f.id]))<=.5:String(d.answers[f.id]??'')===String(ref[f.id])}));
+ const comparisons=teachingFields.filter(f=>ref[f.id]!==undefined).map(f=>({id:f.id,label:f.label,answer:d.answers[f.id]??'未填写',reference:ref[f.id],correct:f.kind==='number'?d.answers[f.id]!==''&&d.answers[f.id]!==undefined&&Math.abs(Number(d.answers[f.id])-Number(ref[f.id]))<=.5:String(d.answers[f.id]??'')===String(ref[f.id])}));
  const matched=comparisons.filter(c=>c.correct).length,applicable=localizationRequired();
  const reportMax=applicable?75:100,reportRaw=comparisons.length?reportMax/2*(complete/teachingFields.length+matched/comparisons.length):reportMax*complete/teachingFields.length;
  const localizationScore=applicable?localizationPoints(d.localization):null;
- return {complete,comparisons,matched,score:Math.round((reportRaw+(localizationScore||0))*10)/10,reportScore:Math.round(reportRaw*10)/10,reportMax,localizationScore,completionOnly:!comparisons.length};
+ const evaluation={complete,comparisons,matched,score:Math.round((reportRaw+(localizationScore||0))*10)/10,reportScore:Math.round(reportRaw*10)/10,reportMax,localizationScore,completionOnly:!comparisons.length};
+ evaluation.feedback=reviewFeedback(d,evaluation);return evaluation;
 }
 function doctorSays(text){return `<div class="doctor-chat"><div class="doctor-portrait">${doctorArt}<span>林医生</span></div><div class="doctor-speech"><small>影像课堂 · 一起观察吧</small><p>${escape(text)}</p></div></div>`}
 function teachingShell(){ $('.report-summary').hidden=true;$('.report-footer').hidden=true;$('.tabs').hidden=!reportUnlocked||teachingBoard;$('#reportPanel .panel-heading span').textContent=teachingBoard?'黑板复盘课堂':'医生问答课堂';$('#source').textContent='教学答题 · 参考答案在提交后开放';document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('selected',b.dataset.tab===teachingTab);b.setAttribute('aria-selected',String(b.dataset.tab===teachingTab))}) }
@@ -71,8 +115,8 @@ report=function(){if(ct&&!localizationFinished())reportUnlocked=false;teachingSh
  root.scrollTop=0;
 };
 function submitLesson(){if(busy||!ct||!requireLocalization())return;const d=getDraft();if(!d.findings.trim()||!d.diagnosis.trim()){toast('请先完成影像所见和诊断意见，再提交复盘');return}d.submitted=true;d.evaluation=evaluateDraft(d);d.submittedAt=new Date().toISOString();saveDraft();teachingBoard=true;$('#evaluate').classList.add('done');$('#report').classList.add('done');report();guideStage='ready';focusGuideStep(4,true,'复盘黑板已打开！看看哪些观察一致、哪些值得再看一遍。完成后可导出你的作业。');chime()}
-function showReview(){const d=getDraft();if(!d.submitted){teachingBoard=false;report();return}const e=d.evaluation;
- $('#reportContent').innerHTML=`<div class="blackboard"><div class="board-title">✦ 林医生的复盘课堂 ✦</div><div class="chalk-score">${e.score}<small>/ 100</small></div><p>${e.localizationScore===null?'定位不适用，本次仅评价报告。':`阅片练习 ${e.localizationScore} / 25 分 · 报告 ${e.reportScore} / 75 分。${d.localization.mode&&d.localization.mode!=='learning'?`Dice ${Number(d.localization.dice).toFixed(3)}`:d.localization.outcome==='hint'?'使用提示完成定位。':`第 ${d.localization.attempts} 次尝试命中。`}`} ${e.completionOnly?'本病例无可自动提取的Word参考字段，报告仅按填写完整度评分。':`报告完整度${e.reportMax/2}分＋参考字段一致性${e.reportMax/2}分。数值允许±0.5 mm。`}</p><div class="board-stats">已填 ${e.complete}/${teachingFields.length} 项 · 参考一致 ${e.matched}/${e.comparisons.length} 项</div><h3>一起来复盘</h3>${e.comparisons.length?e.comparisons.map(c=>`<div class="review-row ${c.correct?'right':'wrong'}"><b>${c.correct?'✓ 一致':'↻ 再观察'} · ${escape(c.label)}</b><span>你的答案：${escape(c.answer)}</span><span>Word参考：${escape(c.reference)}</span></div>`).join(''):'<p>参考字段缺失不判错。请结合下方原报告人工复盘。</p>'}<h3>老师的反馈</h3><p>你完成了${e.complete}项观察。${e.comparisons.length?`其中${e.matched}项与可提取的Word字段一致，${e.comparisons.length-e.matched}项需要复核。`:''}未比较的字段、自由文本和句式建议暂不评判对错。请特别检查报告与影像是否对应。</p></div><details class="gt-reference"><summary>打开GT参考档案（提交后可见）</summary><h3>Word结构化参考 · ${escape(meta?.structuredSource||'病例Word')}</h3>${example&&meta?.sections?.length?meta.sections.map(s=>`<h4>${escape(s.title)}</h4>${s.rows.map(r=>`<p>${escape(r.join('：'))}</p>`).join('')}`).join(''):'<p>无匹配Word报告。</p>'}<h3>Excel影像所见</h3><p>${escape(example?meta?.findings||'无参考':'无关联参考')}</p><h3>Excel诊断意见</h3><p>${escape(example?meta?.diagnosis||'无参考':'无关联参考')}</p><p>来源：${escape(example?meta?.source||'未匹配':'本地导入')}。不同来源可能存在差异，此处保留原文。</p></details><button id="reviseLesson" class="lesson-primary">回到作业，再观察一次 ↺</button>`;
+function showReview(){const d=getDraft();if(!d.submitted){teachingBoard=false;report();return}const e=d.evaluation,feedback=e.feedback||reviewFeedback(d,e);
+ $('#reportContent').innerHTML=`<div class="blackboard"><div class="board-title">✦ 林医生的复盘课堂 ✦</div><div class="chalk-score">${e.score}<small>/ 100</small></div><p>${e.localizationScore===null?'定位不适用，本次仅评价报告。':`阅片练习 ${e.localizationScore} / 25 分 · 报告 ${e.reportScore} / 75 分。${d.localization.mode&&d.localization.mode!=='learning'?`Dice ${Number(d.localization.dice).toFixed(3)}`:d.localization.outcome==='hint'?'使用提示完成定位。':`第 ${d.localization.attempts} 次尝试命中。`}`} ${e.completionOnly?'本病例无可自动提取的Word参考字段，报告仅按填写完整度评分。':`报告完整度${e.reportMax/2}分＋参考字段一致性${e.reportMax/2}分。数值允许±0.5 mm。`}</p><div class="board-stats">已填 ${e.complete}/${teachingFields.length} 项 · 参考一致 ${e.matched}/${e.comparisons.length} 项</div><h3>下次可以这样改进</h3>${feedbackList(feedback.summary)}${feedback.practice.length?'<h3>阅片练习建议</h3>'+feedbackList(feedback.practice.map(x=>x.text)):''}<h3>一起来复盘</h3>${e.comparisons.length?e.comparisons.map(c=>`<div class="review-row ${c.correct?'right':'wrong'}"><b>${c.correct?'✓ 一致':'↻ 再观察'} · ${escape(c.label)}</b><span>你的答案：${escape(c.answer)}</span><span>Word参考：${escape(c.reference)}</span>${feedback.fields.filter(f=>f.id===(c.id||teachingFields.find(t=>t.label===c.label)?.id)).map(f=>'<p class="field-feedback">'+escape(f.text)+'</p>').join('')}</div>`).join(''):'<p>参考字段缺失不判错。请结合下方原报告人工复盘。</p>'}${feedback.fields.filter(f=>!e.comparisons.some(c=>c.id===f.id||c.label===teachingFields.find(t=>t.id===f.id)?.label)).map(f=>'<div class="review-row"><b>待补充 · '+escape(teachingFields.find(t=>t.id===f.id).label)+'</b><p class="field-feedback">'+escape(f.text)+'</p></div>').join('')}<h3>老师的反馈</h3><p>你完成了${e.complete}项观察。${e.comparisons.length?`其中${e.matched}项与可提取的Word字段一致，${e.comparisons.length-e.matched}项需要复核。`:''}未比较的字段、自由文本和句式建议暂不评判对错。请特别检查报告与影像是否对应。</p></div><details class="gt-reference"><summary>打开GT参考档案（提交后可见）</summary><h3>Word结构化参考 · ${escape(meta?.structuredSource||'病例Word')}</h3>${example&&meta?.sections?.length?meta.sections.map(s=>`<h4>${escape(s.title)}</h4>${s.rows.map(r=>`<p>${escape(r.join('：'))}</p>`).join('')}`).join(''):'<p>无匹配Word报告。</p>'}<h3>Excel影像所见</h3><p>${escape(example?meta?.findings||'无参考':'无关联参考')}</p><h3>Excel诊断意见</h3><p>${escape(example?meta?.diagnosis||'无参考':'无关联参考')}</p><p>来源：${escape(example?meta?.source||'未匹配':'本地导入')}。不同来源可能存在差异，此处保留原文。</p></details><button id="reviseLesson" class="lesson-primary">回到作业，再观察一次 ↺</button>`;
  $('#reportContent').scrollTop=0;
  $('#reviseLesson').onclick=()=>{teachingBoard=false;teachingTab='structured';report();guideStage='ready';focusGuideStep(2,true,'回到第02步修改作业。修改后请重新提交，系统会重新计算分数。')};
 }

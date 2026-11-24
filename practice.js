@@ -7,6 +7,7 @@ const practiceView=$('#viewport');
 practiceView.insertAdjacentHTML('beforeend','<svg id="practiceOverlay"></svg>');
 $('.viewer-head').insertAdjacentHTML('beforeend','<button id="practiceRestart" class="quiet" hidden>↺ 重新开始分割</button>');
 $('.viewer-head').insertAdjacentHTML('afterend',`<div class="practice-tools" hidden><b class="practice-badge" id="practiceBadge"></b><button id="practiceFrame">选择此帧</button><button id="practiceReturn">返回标注帧</button><button id="practiceNew">新增病灶</button><select id="practiceObject" aria-label="选择病灶"></select><button id="practiceForeground" aria-pressed="true">前景点</button><button id="practiceBackground">背景点</button><button id="practiceUndo">撤销</button><button id="practiceDelete">删除病灶</button><button id="practiceClear">清空标注</button><button id="practiceRetry">重试分割</button><button id="practiceEdit">重新编辑</button><output id="practiceStatus" aria-live="polite"></output><a id="practiceDownloads" hidden>下载本次标注档案</a></div>`);
+$('.practice-tools').insertAdjacentHTML('beforeend','<div id="practiceFeedback" class="practice-feedback" role="status" hidden></div>');
 const oldFinished=localizationFinished,oldPoints=localizationPoints,oldUpdateLocalization=updateLocalization,oldStartLocalization=startLocalization;
 localizationFinished=function(){return window.practiceMode!=='learning'&&ct&&example?!!getDraft().localization.practicePassed:oldFinished()};
 localizationPoints=function(r){return r?.mode&&r.mode!=='learning'?(r.dice||0)*25:oldPoints(r)};
@@ -28,6 +29,8 @@ function updatePractice(){$('#practiceRestart').hidden=!ct||!example;if(!ct)retu
  if(advanced){$('#analyze').disabled=practicePending||done||p.sliceIndex===null;$('#analyze').textContent=practicePending?'处理中…':done?'练习完成 ✓':'提交标注 →';$('#locate').disabled=p.sliceIndex===null;$('#overlay').disabled=!done;$('#practiceStatus').textContent=p.message||(p.sliceIndex===null?'滚动浏览CT，选择想标注的一帧。':`标注第 ${displayGeometry.reverseZ?dims[2]-p.sliceIndex:p.sliceIndex+1} 帧 · ${done?'挑战已完成':'有参考时需 Dice ≥ 0.50，才可填写报告'}`)}
  $('#import').classList.toggle('done',done);const select=$('#practiceObject');select.replaceChildren();p.groups.forEach((g,i)=>{const o=document.createElement('option');o.value=i;o.textContent='病灶 '+(i+1);select.append(o)});select.value=practiceObject;
  $('#practiceDownloads').hidden=!getDraft().localization.submissionId;if(!$('#practiceDownloads').hidden){$('#practiceDownloads').href='/api/practice/submissions/'+getDraft().localization.submissionId+'/download';$('#practiceDownloads').download='标注档案.zip'}
+ const record=getDraft().localization,feedback=$('#practiceFeedback');feedback.hidden=!advanced||!record.submissionId;
+ feedback.innerHTML=feedback.hidden?'':'<strong>林医生的小建议</strong>'+feedbackList(practiceAdvice(record).map(x=>x.text));
  drawPractice()}
 updateLocalization=function(){oldUpdateLocalization();updatePractice()};
 startLocalization=function(){if(window.practiceMode==='learning')oldStartLocalization();else submitPractice()};
